@@ -1,0 +1,3748 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d061a" />
+  <title>ChemWordle: Ternario y Triatómico</title>
+  <style>
+    /* ==========================================================================
+       VARIABLES Y ESTÉTICA MOBILE-FIRST (MORADO MUY OSCURO + GLASSMORPHISM)
+       ========================================================================== */
+    :root {
+      --bg-0: #0d061a;
+      --bg-1: #130826;
+      --bg-2: #190b30;
+      --glass-bg: rgba(25, 11, 48, 0.82);
+      --glass-soft: rgba(34, 16, 66, 0.72);
+      --glass-border: rgba(167, 139, 250, 0.24);
+      --glass-border-strong: rgba(216, 180, 254, 0.5);
+
+      --text-primary: #f8f6ff;
+      --text-secondary: #cbbbf8;
+      --text-muted: #9381b8;
+
+      --accent-violet: #8b5cf6;
+      --accent-fuchsia: #c084fc;
+      --accent-cyan: #38bdf8;
+      --accent-amber: #fbbf24;
+      --accent-rose: #fb7185;
+
+      /* Colores Wordle */
+      --green-solid: #15803d;
+      --green-bright: #22c55e;
+      --green-bg: rgba(34, 197, 94, 0.22);
+      --green-glow: rgba(34, 197, 94, 0.36);
+
+      --yellow-solid: #a16207;
+      --yellow-bright: #eab308;
+      --yellow-bg: rgba(234, 179, 8, 0.22);
+      --yellow-glow: rgba(234, 179, 8, 0.32);
+
+      --red-solid: #991b1b;
+      --red-bright: #ef4444;
+      --red-bg: rgba(127, 29, 29, 0.48);
+
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --shadow-card: 0 12px 32px rgba(4, 1, 12, 0.72);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-primary);
+      background-color: var(--bg-0);
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(139, 92, 246, 0.24) 0%, transparent 45%),
+        radial-gradient(circle at 88% 14%, rgba(192, 132, 252, 0.16) 0%, transparent 42%),
+        radial-gradient(circle at 50% 96%, rgba(88, 28, 135, 0.32) 0%, transparent 55%),
+        linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 48%, var(--bg-2) 100%);
+      background-attachment: fixed;
+      line-height: 1.4;
+      overflow-x: hidden;
+    }
+
+    button, input, .pt-cell {
+      touch-action: manipulation;
+      font-family: inherit;
+    }
+
+    /* ==========================================================================
+       CONTENEDOR PRINCIPAL CON RESPETO A ÁREAS SEGURAS
+       ========================================================================== */
+    .app-container {
+      width: 100%;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      padding-left: calc(10px + env(safe-area-inset-left, 0px));
+      padding-right: calc(10px + env(safe-area-inset-right, 0px));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ==========================================================================
+       ENCABEZADO COMPACTO MOBILE-FIRST
+       ========================================================================== */
+    .header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 10px 12px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c3aed, #c084fc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 18px rgba(139, 92, 246, 0.45);
+      flex-shrink: 0;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand h1 {
+      font-size: 1.06rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #e9d5ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.15;
+    }
+
+    .brand p {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .attempt-badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.24);
+      border: 1px solid rgba(167, 139, 250, 0.45);
+      font-weight: 800;
+      font-size: 0.78rem;
+      color: #f3e8ff;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Selector Diario / Libre */
+    .mode-switch {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(12, 5, 24, 0.85);
+      border: 1px solid rgba(167, 139, 250, 0.34);
+      border-radius: 10px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      min-height: 34px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: background 0.16s ease, color 0.16s ease;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+      color: #ffffff;
+      border-color: rgba(216, 180, 254, 0.55);
+      box-shadow: 0 2px 10px rgba(124, 58, 237, 0.45);
+    }
+
+    .mode-date {
+      font-size: 0.67rem;
+      font-weight: 600;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(10, 3, 22, 0.42);
+    }
+
+    .header-icon-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    /* Botones reutilizables */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: rgba(46, 24, 84, 0.82);
+      color: var(--text-primary);
+      min-height: 36px;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      user-select: none;
+      transition: transform 0.12s ease, background 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+      border-color: rgba(216, 180, 254, 0.55);
+      box-shadow: 0 5px 16px rgba(124, 58, 237, 0.42);
+      color: #ffffff;
+    }
+
+    .btn-hint {
+      background: linear-gradient(135deg, rgba(202, 138, 4, 0.28), rgba(161, 98, 7, 0.42));
+      border-color: rgba(234, 179, 8, 0.48);
+      color: #fef08a;
+    }
+
+    .btn-icon-only {
+      min-width: 36px;
+      padding: 6px 8px;
+    }
+
+    /* Botón blanco "⇄ Reordenar" */
+    .btn-reorder {
+      appearance: none;
+      background: #ffffff;
+      color: #16082a;
+      border: 1.5px solid rgba(216, 180, 254, 0.9);
+      border-radius: var(--radius-sm);
+      min-height: 46px;
+      padding: 8px 13px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(4, 1, 10, 0.45);
+      transition: transform 0.12s ease, box-shadow 0.2s ease, opacity 0.18s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-reorder:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn-reorder:disabled {
+      opacity: 0.34;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-reorder.needs-fix {
+      border-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.55), 0 0 22px rgba(255, 255, 255, 0.4);
+      animation: pulseWhite 1.7s infinite;
+    }
+
+    @keyframes pulseWhite {
+      0%, 100% {
+        box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.45), 0 0 16px rgba(255, 255, 255, 0.28);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(216, 180, 254, 0.7), 0 0 26px rgba(255, 255, 255, 0.52);
+      }
+    }
+
+    /* ==========================================================================
+       TARJETAS Y LAYOUT RESPONSIVE (MOBILE-FIRST -> DESKTOP >= 900px)
+       ========================================================================== */
+    .card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 11px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 9px;
+    }
+
+    .card-title {
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .card-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .workspace-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .left-column, .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    /* ==========================================================================
+       ZONA DE ENTRADA: 3 CASILLAS COMPACTAS (CABE EN 360px SIN DESBORDAR)
+       ========================================================================== */
+    .slots-anchor {
+      position: relative;
+    }
+
+    .slots-container {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    .slot-box {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 7px 6px;
+      background: rgba(14, 6, 28, 0.82);
+      border: 1.5px solid rgba(167, 139, 250, 0.26);
+      border-radius: var(--radius-md);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      cursor: pointer;
+      min-width: 0;
+    }
+
+    .slot-box.active {
+      border-color: var(--accent-cyan);
+      background: rgba(29, 13, 56, 0.92);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.28), 0 0 16px rgba(192, 132, 252, 0.26);
+    }
+
+    .slot-box.matched-slot {
+      border-color: rgba(34, 197, 94, 0.72);
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.2);
+    }
+
+    .slot-box.matched-slot.active {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3), 0 0 14px rgba(34, 197, 94, 0.25);
+    }
+
+    .slot-box.conflict-slot {
+      border-color: rgba(251, 113, 133, 0.8);
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.24);
+    }
+
+    .slot-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2px;
+    }
+
+    .slot-role {
+      font-size: 0.64rem;
+      font-weight: 800;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slot-clear-btn {
+      appearance: none;
+      border: none;
+      background: rgba(167, 139, 250, 0.2);
+      color: #f3e8ff;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      flex-shrink: 0;
+      transition: opacity 0.14s ease, background 0.14s ease;
+    }
+
+    .slot-box.filled .slot-clear-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .slot-clear-btn:active {
+      background: rgba(239, 68, 68, 0.45);
+    }
+
+    /* Input >= 16px para evitar zoom automático en iOS/Android */
+    .slot-input {
+      width: 100%;
+      min-width: 0;
+      background: rgba(9, 4, 19, 0.78);
+      border: 1px solid rgba(167, 139, 250, 0.25);
+      border-radius: 8px;
+      padding: 6px 4px;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+    }
+
+    .slot-input::placeholder {
+      color: rgba(196, 181, 253, 0.36);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .slot-input:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .slot-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 3px;
+      font-size: 0.64rem;
+      min-height: 15px;
+    }
+
+    .slot-sub {
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .slot-en {
+      font-weight: 700;
+      color: #7dd3fc;
+      flex-shrink: 0;
+    }
+
+    /* Chips de valencias (siempre incluyendo 0) */
+    .slot-valences {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-height: 24px;
+      padding-top: 4px;
+      border-top: 1px dashed rgba(167, 139, 250, 0.2);
+      align-items: center;
+    }
+
+    .val-placeholder {
+      font-size: 0.62rem;
+      color: rgba(147, 129, 184, 0.78);
+      font-style: italic;
+    }
+
+    .val-chip {
+      appearance: none;
+      border: 1px solid rgba(167, 139, 250, 0.32);
+      background: rgba(46, 24, 84, 0.68);
+      color: var(--text-primary);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 6px;
+      line-height: 1.2;
+      cursor: default;
+      transition: transform 0.12s ease, background 0.14s ease, opacity 0.14s ease;
+    }
+
+    .val-chip.compatible {
+      background: rgba(139, 92, 246, 0.28);
+      border-color: rgba(196, 181, 253, 0.58);
+      color: #ffffff;
+    }
+
+    .val-chip.incompatible {
+      opacity: 0.28;
+      background: rgba(20, 10, 38, 0.5);
+      border-color: rgba(144, 126, 176, 0.22);
+      color: var(--text-muted);
+    }
+
+    .val-chip.matched {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      border-color: #86efac;
+      color: #052e16;
+      box-shadow: 0 0 9px rgba(34, 197, 94, 0.55);
+      opacity: 1;
+    }
+
+    .val-chip.alt-valid {
+      background: rgba(22, 163, 74, 0.24);
+      border: 1.5px dashed #4ade80;
+      color: #bbf7d0;
+      cursor: pointer;
+      opacity: 1;
+      padding: 3px 6px;
+    }
+
+    .val-chip.alt-valid:active {
+      transform: scale(0.95);
+    }
+
+    .slot-warn {
+      display: none;
+      font-size: 0.63rem;
+      font-weight: 700;
+      color: #fda4af;
+      background: rgba(153, 27, 27, 0.38);
+      border: 1px solid rgba(251, 113, 133, 0.45);
+      border-radius: 6px;
+      padding: 2px 4px;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .slot-warn.show {
+      display: block;
+    }
+
+    /* Autocompletado táctil ancho completo (opciones >= 44px) */
+    .autocomplete-panel {
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      background: #170a2e;
+      border: 1.5px solid rgba(192, 132, 252, 0.55);
+      border-radius: 13px;
+      box-shadow: 0 18px 40px rgba(3, 0, 10, 0.92);
+      max-height: 264px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .autocomplete-panel.open {
+      display: block;
+    }
+
+    .autocomplete-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 46px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(167, 139, 250, 0.14);
+    }
+
+    .autocomplete-item:last-child {
+      border-bottom: none;
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.highlighted {
+      background: rgba(139, 92, 246, 0.34);
+    }
+
+    .ac-sym {
+      font-weight: 900;
+      color: #ffffff;
+      min-width: 30px;
+      font-size: 1rem;
+    }
+
+    .ac-name {
+      flex: 1;
+      color: var(--text-primary);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ac-meta {
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Validador en vivo compacto */
+    .live-validator {
+      margin-top: 9px;
+      padding: 9px 11px;
+      border-radius: 12px;
+      background: rgba(14, 6, 28, 0.78);
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      font-size: 0.79rem;
+      color: var(--text-secondary);
+      line-height: 1.38;
+    }
+
+    .live-validator.valid {
+      background: rgba(20, 83, 45, 0.38);
+      border-color: rgba(34, 197, 94, 0.6);
+      color: #dcfce7;
+    }
+
+    .live-validator.warn {
+      background: rgba(120, 53, 15, 0.38);
+      border-color: rgba(251, 191, 36, 0.56);
+      color: #fef3c7;
+    }
+
+    .live-validator.invalid {
+      background: rgba(127, 29, 29, 0.4);
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #fecaca;
+    }
+
+    .validator-formula {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .validator-pill {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #86efac;
+      background: rgba(22, 163, 74, 0.3);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .validator-meta {
+      font-size: 0.74rem;
+      opacity: 0.94;
+    }
+
+    .validator-alt-note {
+      margin-top: 3px;
+      font-size: 0.72rem;
+      color: #bbf7d0;
+    }
+
+    /* Barra de botones táctiles (>= 46px) */
+    .input-actions-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .btn-submit-main {
+      min-height: 46px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .reorder-hint {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #e9d5ff;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .reorder-hint.show {
+      display: block;
+    }
+
+    /* ==========================================================================
+       PESTAÑAS MÓVILES (< 900px)
+       ========================================================================== */
+    .mobile-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(14, 6, 28, 0.86);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+    }
+
+    .mobile-tab-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      min-height: 42px;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.16s ease, color 0.16s ease;
+    }
+
+    .mobile-tab-btn.active {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.88), rgba(147, 51, 234, 0.88));
+      color: #ffffff;
+      border-color: rgba(216, 180, 254, 0.5);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.42);
+    }
+
+    .tab-panel {
+      display: block;
+    }
+
+    @media (max-width: 899px) {
+      .tab-panel.mobile-hidden {
+        display: none;
+      }
+    }
+
+    /* ==========================================================================
+       TABLERO DE 8 INTENTOS (HISTORIAL CON ANIMACIÓN FLIP)
+       ========================================================================== */
+    .board {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .board-row {
+      display: grid;
+      grid-template-columns: 20px repeat(3, minmax(0, 1fr)) 86px;
+      gap: 6px;
+      align-items: center;
+      padding: 5px;
+      border-radius: 12px;
+      background: rgba(14, 6, 28, 0.46);
+      border: 1px solid rgba(167, 139, 250, 0.12);
+    }
+
+    .board-row.current {
+      background: rgba(139, 92, 246, 0.16);
+      border-color: rgba(192, 132, 252, 0.42);
+    }
+
+    .row-index {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .tile {
+      height: 50px;
+      border-radius: 10px;
+      background: rgba(18, 8, 36, 0.78);
+      border: 1.5px solid rgba(167, 139, 250, 0.22);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+      overflow: hidden;
+      backface-visibility: hidden;
+    }
+
+    .tile-sym {
+      font-size: 1.08rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .tile-name {
+      font-size: 0.62rem;
+      opacity: 0.92;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .tile.correct {
+      background: var(--green-bg);
+      border-color: var(--green-bright);
+      box-shadow: 0 0 12px var(--green-glow);
+      color: #dcfce7;
+    }
+
+    .tile.present {
+      background: var(--yellow-bg);
+      border-color: var(--yellow-bright);
+      box-shadow: 0 0 12px var(--yellow-glow);
+      color: #fef9c3;
+    }
+
+    .tile.absent {
+      background: var(--red-bg);
+      border-color: var(--red-solid);
+      color: #fecaca;
+    }
+
+    .tile.reveal {
+      animation: tileFlip 0.52s ease forwards;
+    }
+
+    @keyframes tileFlip {
+      0% { transform: perspective(400px) rotateX(0deg); }
+      45% { transform: perspective(400px) rotateX(85deg); opacity: 0.65; }
+      100% { transform: perspective(400px) rotateX(0deg); opacity: 1; }
+    }
+
+    .row-chem-meta {
+      text-align: right;
+      padding-right: 2px;
+      line-height: 1.2;
+      overflow: hidden;
+    }
+
+    .row-formula {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #ede9fe;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-valences {
+      font-size: 0.64rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ==========================================================================
+       PESTAÑA / PANEL TABLA PERIÓDICA: MINI-RESUMEN, INSPECTOR, FILTROS Y GRID
+       ========================================================================== */
+    .pt-mini-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 9px;
+      border-radius: 11px;
+      background: rgba(14, 6, 28, 0.72);
+      border: 1px solid rgba(167, 139, 250, 0.22);
+      font-size: 0.74rem;
+    }
+
+    .mini-slots-strip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .mini-slot-pill {
+      appearance: none;
+      border: 1px solid rgba(167, 139, 250, 0.34);
+      background: rgba(42, 20, 78, 0.78);
+      color: var(--text-primary);
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .mini-slot-pill.active {
+      border-color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.2);
+      color: #e0f2fe;
+    }
+
+    .mini-last-attempt {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 0.72rem;
+    }
+
+    .mini-chip {
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.7rem;
+    }
+
+    .mini-chip.correct { background: var(--green-solid); color: #ffffff; }
+    .mini-chip.present { background: var(--yellow-solid); color: #ffffff; }
+    .mini-chip.absent  { background: var(--red-solid); color: #fecaca; }
+
+    /* Inspector compacto con botón "Poner en Pos. X" */
+    .inspector-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 11px;
+      border-radius: 13px;
+      background: rgba(14, 6, 28, 0.84);
+      border: 1px solid rgba(167, 139, 250, 0.28);
+      margin-bottom: 9px;
+    }
+
+    .inspector-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .inspector-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .inspector-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, rgba(124, 58, 237, 0.48), rgba(49, 22, 92, 0.92));
+      border: 1px solid rgba(196, 181, 253, 0.48);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .inspector-badge .iz {
+      font-size: 0.62rem;
+      color: var(--text-secondary);
+      line-height: 1;
+    }
+
+    .inspector-badge .isym {
+      font-size: 1.12rem;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .inspector-info {
+      min-width: 0;
+    }
+
+    .inspector-info h3 {
+      font-size: 0.92rem;
+      font-weight: 800;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .homo-tag {
+      font-size: 0.64rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #bae6fd;
+    }
+
+    .inspector-info p {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-put-slot {
+      min-height: 38px;
+      padding: 6px 11px;
+      font-size: 0.76rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .inspector-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .metric-chip {
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(42, 21, 78, 0.78);
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      font-size: 0.73rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric-chip span { color: var(--text-muted); }
+    .metric-chip strong { color: #f8f6ff; }
+
+    /* Filtros rápidos + toggle Deslizar / Ajustar */
+    .pt-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .pt-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .filter-pill {
+      appearance: none;
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      background: rgba(29, 13, 56, 0.74);
+      color: var(--text-secondary);
+      min-height: 32px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .filter-pill.active {
+      background: rgba(139, 92, 246, 0.42);
+      border-color: #d8b4fe;
+      color: #ffffff;
+    }
+
+    .pt-mode-toggle {
+      appearance: none;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(14, 116, 144, 0.26);
+      color: #bae6fd;
+      min-height: 32px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* Leyenda compacta */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .dot-correct { background: var(--green-bright); }
+    .dot-present { background: var(--yellow-bright); }
+    .dot-absent  { background: var(--red-solid); border: 1px solid var(--red-bright); }
+    .dot-homo    { background: var(--accent-cyan); border-radius: 50%; width: 7px; height: 7px; }
+
+    /* Contenedor con indicador visual de scroll horizontal */
+    .ptable-viewport {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .ptable-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
+      scroll-behavior: smooth;
+    }
+
+    .ptable-scroll-hint {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .ptable-grid {
+      display: grid;
+      grid-template-columns: repeat(18, 38px);
+      grid-template-rows: repeat(7, 42px) 10px repeat(2, 42px);
+      gap: 3px;
+      width: max-content;
+    }
+
+    /* Modo "Ajustar" compacto para ver toda la tabla sin deslizar */
+    .ptable-grid.fit-mode {
+      width: 100%;
+      min-width: 0;
+      grid-template-columns: repeat(18, minmax(0, 1fr));
+      grid-template-rows: repeat(7, 30px) 8px repeat(2, 30px);
+      gap: 2px;
+    }
+
+    .ptable-grid.fit-mode .pt-z {
+      display: none;
+    }
+
+    .ptable-grid.fit-mode .pt-sym {
+      font-size: 0.62rem;
+      margin-top: 0;
+    }
+
+    .ptable-grid.fit-mode .pt-homo-dot {
+      width: 3px;
+      height: 3px;
+      top: 2px;
+      right: 2px;
+    }
+
+    .ptable-grid.fit-mode .pt-marker,
+    .ptable-grid.fit-mode .fblock-label {
+      font-size: 0.52rem;
+    }
+
+    .pt-cell {
+      position: relative;
+      appearance: none;
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      background: rgba(34, 17, 64, 0.82);
+      color: var(--text-primary);
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1px;
+      transition: transform 0.1s ease, border-color 0.14s ease, opacity 0.16s ease;
+    }
+
+    .pt-cell.inspected {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.55);
+      z-index: 3;
+    }
+
+    .pt-cell.filtered-out {
+      opacity: 0.14;
+      pointer-events: none;
+    }
+
+    /* Bordes superiores por categoría */
+    .pt-cell[data-cat="no-metal"]       { border-top: 2px solid #38bdf8; }
+    .pt-cell[data-cat="halogeno"]       { border-top: 2px solid #818cf8; }
+    .pt-cell[data-cat="metaloide"]      { border-top: 2px solid #2dd4bf; }
+    .pt-cell[data-cat="alcalino"]       { border-top: 2px solid #fb7185; }
+    .pt-cell[data-cat="alcalinoterreo"] { border-top: 2px solid #fb923c; }
+    .pt-cell[data-cat="transicion"]     { border-top: 2px solid #c084fc; }
+    .pt-cell[data-cat="metal-post"]     { border-top: 2px solid #a78bfa; }
+    .pt-cell[data-cat="lantanido"]      { border-top: 2px solid #f472b6; }
+    .pt-cell[data-cat="actinido"]       { border-top: 2px solid #e879f9; }
+    .pt-cell[data-cat="gas-noble"]      { border-top: 2px solid #64748b; opacity: 0.62; }
+
+    .pt-z {
+      position: absolute;
+      top: 2px;
+      left: 3px;
+      font-size: 0.52rem;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    .pt-homo-dot {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 5px rgba(56, 189, 248, 0.85);
+    }
+
+    .pt-sym {
+      font-size: 0.84rem;
+      font-weight: 800;
+      margin-top: 5px;
+      line-height: 1;
+    }
+
+    /* Estados Wordle (Verde > Amarillo > Rojo) */
+    .pt-cell.state-correct {
+      background: var(--green-solid);
+      border-color: #86efac;
+      color: #ffffff;
+      box-shadow: 0 0 9px var(--green-glow);
+      opacity: 1;
+    }
+
+    .pt-cell.state-correct .pt-z { color: #dcfce7; }
+
+    .pt-cell.state-present {
+      background: var(--yellow-solid);
+      border-color: #fde047;
+      color: #ffffff;
+      box-shadow: 0 0 9px var(--yellow-glow);
+      opacity: 1;
+    }
+
+    .pt-cell.state-present .pt-z { color: #fef9c3; }
+
+    .pt-cell.state-absent {
+      background: rgba(127, 29, 29, 0.54);
+      border-color: rgba(239, 68, 68, 0.48);
+      color: rgba(254, 202, 202, 0.65);
+      opacity: 0.48;
+    }
+
+    .pt-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border: 1px dashed rgba(167, 139, 250, 0.28);
+      border-radius: 7px;
+      background: rgba(20, 9, 38, 0.45);
+    }
+
+    .fblock-label {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    /* ==========================================================================
+       MODALES ESTILO BOTTOM-SHEET EN MÓVIL / CENTRADOS EN ESCRITORIO
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 120;
+      background: rgba(6, 2, 14, 0.78);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 540px;
+      background: #1a0b33;
+      border-top: 1.5px solid rgba(192, 132, 252, 0.48);
+      border-left: 1px solid rgba(192, 132, 252, 0.3);
+      border-right: 1px solid rgba(192, 132, 252, 0.3);
+      border-radius: 22px 22px 0 0;
+      padding: 12px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -16px 50px rgba(2, 0, 8, 0.88);
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      max-height: 88vh;
+      overflow-y: auto;
+      animation: sheetSlideUp 0.22s ease-out;
+    }
+
+    @keyframes sheetSlideUp {
+      from { transform: translateY(28px); opacity: 0.6; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(196, 181, 253, 0.35);
+      margin: 0 auto 2px;
+      flex-shrink: 0;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .modal-close {
+      appearance: none;
+      border: 1px solid rgba(167, 139, 250, 0.34);
+      background: rgba(46, 24, 84, 0.78);
+      color: var(--text-primary);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      font-size: 1.3rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    /* Contenido de Pistas en Modal */
+    .hints-modal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .hint-card {
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: rgba(202, 138, 4, 0.16);
+      border: 1px solid rgba(234, 179, 8, 0.46);
+      color: #fef08a;
+      font-size: 0.84rem;
+      line-height: 1.42;
+    }
+
+    .hint-empty {
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(14, 6, 28, 0.65);
+      border: 1px dashed rgba(167, 139, 250, 0.3);
+      color: var(--text-secondary);
+      font-size: 0.83rem;
+      text-align: center;
+    }
+
+    /* Resultado final */
+    .formula-showcase {
+      text-align: center;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(11, 5, 22, 0.76);
+      border: 1px solid rgba(167, 139, 250, 0.28);
+    }
+
+    .result-type-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.28);
+      border: 1px solid rgba(196, 181, 253, 0.45);
+      color: #e9d5ff;
+      margin-bottom: 5px;
+    }
+
+    .formula-big {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .charge-equation {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .result-elements {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .result-el-card {
+      padding: 8px 6px;
+      border-radius: 11px;
+      background: rgba(34, 17, 64, 0.78);
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      text-align: center;
+    }
+
+    .result-el-card .r-pos { font-size: 0.62rem; color: var(--text-muted); font-weight: 700; }
+    .result-el-card .r-sym { font-size: 1.25rem; font-weight: 900; color: #ffffff; margin: 2px 0; }
+    .result-el-card .r-name { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+    .result-el-card .r-meta { font-size: 0.66rem; color: var(--text-muted); margin-top: 3px; }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .modal-actions .btn {
+      flex: 1 1 140px;
+      min-height: 46px;
+      font-size: 0.88rem;
+    }
+
+    .btn-copy {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.38), rgba(21, 128, 61, 0.6));
+      border-color: rgba(134, 239, 172, 0.55);
+      color: #dcfce7;
+    }
+
+    .rules-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .rules-list li {
+      padding: 10px 12px;
+      border-radius: 11px;
+      background: rgba(14, 6, 28, 0.68);
+      border: 1px solid rgba(167, 139, 250, 0.22);
+    }
+
+    .rules-list strong { color: #ffffff; }
+
+    /* Toast flotante */
+    .toast {
+      position: fixed;
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%) translateY(18px);
+      z-index: 200;
+      background: rgba(29, 13, 58, 0.96);
+      color: #f8f6ff;
+      border: 1px solid rgba(196, 181, 253, 0.55);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.68);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      max-width: 92vw;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ==========================================================================
+       ESCRITORIO / TABLET GRANDE (>= 900px): DOS COLUMNAS + MODALES CENTRADOS
+       ========================================================================== */
+    @media (min-width: 900px) {
+      .app-container {
+        padding: 16px 20px 28px;
+        gap: 14px;
+      }
+
+      .header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+      }
+
+      .header-controls {
+        flex-wrap: nowrap;
+      }
+
+      .brand h1 { font-size: 1.2rem; }
+
+      .mobile-tabs {
+        display: none;
+      }
+
+      .workspace-layout {
+        display: grid;
+        grid-template-columns: 480px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .slots-container {
+        gap: 9px;
+      }
+
+      .slot-box {
+        padding: 10px 9px;
+      }
+
+      .slot-role {
+        font-size: 0.7rem;
+      }
+
+      .ptable-grid {
+        width: 100%;
+        min-width: 680px;
+        grid-template-columns: repeat(18, minmax(36px, 1fr));
+        grid-template-rows: repeat(7, 44px) 12px repeat(2, 44px);
+        gap: 4px;
+      }
+
+      .ptable-scroll-hint {
+        display: none;
+      }
+
+      .pt-mode-toggle {
+        display: none;
+      }
+
+      .modal-backdrop {
+        align-items: center;
+        padding: 18px;
+      }
+
+      .modal {
+        border-radius: 20px;
+        border: 1px solid rgba(192, 132, 252, 0.45);
+        padding: 20px 22px;
+      }
+
+      .sheet-handle {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- ENCABEZADO COMPACTO -->
+    <header class="header">
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="2.6"></circle>
+              <circle cx="5.5" cy="17.5" r="2.6"></circle>
+              <circle cx="18.5" cy="17.5" r="2.6"></circle>
+              <line x1="10.6" y1="7.2" x2="6.9" y2="15.2"></line>
+              <line x1="13.4" y1="7.2" x2="17.1" y2="15.2"></line>
+              <line x1="8.1" y1="17.5" x2="15.9" y2="17.5"></line>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>ChemWordle</h1>
+            <p>Ternario y Triatómico</p>
+          </div>
+        </div>
+        <div class="attempt-badge" id="attemptCounter">1 / 8</div>
+      </div>
+
+      <div class="header-controls">
+        <div class="mode-switch" role="group" aria-label="Modo de juego">
+          <button class="mode-btn active" id="btnModeDaily" type="button">
+            📅 Diario <span class="mode-date" id="dailyDateLabel">--/--/----</span>
+          </button>
+          <button class="mode-btn" id="btnModeFree" type="button">
+            🎲 Libre
+          </button>
+        </div>
+
+        <div class="header-icon-actions">
+          <button class="btn btn-hint" id="btnHint" type="button" aria-label="Ver o revelar pistas">
+            💡 <span id="hintBtnCount">0/3</span>
+          </button>
+          <button class="btn btn-icon-only" id="btnRules" type="button" aria-label="Cómo jugar" title="Cómo jugar">❓</button>
+          <button class="btn btn-primary btn-icon-only" id="btnNewGameHeader" type="button" aria-label="Nueva partida" title="Reiniciar / Nueva partida">↻</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ESPACIO DE TRABAJO -->
+    <main class="workspace-layout">
+      <!-- COLUMNA IZQUIERDA: ZONA DE ENTRADA + PESTAÑAS MÓVILES + TABLERO -->
+      <section class="left-column">
+        <!-- ZONA DE ENTRADA SIEMPRE VISIBLE ARRIBA -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Construye tu molécula</span>
+            <span class="card-subtitle">EN₁ ≤ EN₂ ≤ EN₃ · Σ = 0</span>
+          </div>
+
+          <div class="slots-anchor" id="slotsAnchor">
+            <div class="slots-container">
+              <!-- Posición 1 -->
+              <div class="slot-box active" id="slotBox0">
+                <div class="slot-header">
+                  <span class="slot-role">Pos 1 · Catión +</span>
+                  <button class="slot-clear-btn" id="slotClear0" type="button" aria-label="Limpiar posición 1">&times;</button>
+                </div>
+                <input class="slot-input" id="slotInput0" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="H, Na..." aria-label="Posición 1 Catión" />
+                <div class="slot-meta">
+                  <span class="slot-sub" id="slotSub0">Menor EN</span>
+                  <span class="slot-en" id="slotEN0"></span>
+                </div>
+                <div class="slot-valences" id="slotVals0">
+                  <span class="val-placeholder">Val. (+ y 0)</span>
+                </div>
+                <div class="slot-warn" id="slotWarn0"></div>
+              </div>
+
+              <!-- Posición 2 -->
+              <div class="slot-box" id="slotBox1">
+                <div class="slot-header">
+                  <span class="slot-role">Pos 2 · Central ±</span>
+                  <button class="slot-clear-btn" id="slotClear1" type="button" aria-label="Limpiar posición 2">&times;</button>
+                </div>
+                <input class="slot-input" id="slotInput1" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="S, C, O..." aria-label="Posición 2 Central" />
+                <div class="slot-meta">
+                  <span class="slot-sub" id="slotSub1">EN media</span>
+                  <span class="slot-en" id="slotEN1"></span>
+                </div>
+                <div class="slot-valences" id="slotVals1">
+                  <span class="val-placeholder">Val. (± y 0)</span>
+                </div>
+                <div class="slot-warn" id="slotWarn1"></div>
+              </div>
+
+              <!-- Posición 3 -->
+              <div class="slot-box" id="slotBox2">
+                <div class="slot-header">
+                  <span class="slot-role">Pos 3 · Anión −</span>
+                  <button class="slot-clear-btn" id="slotClear2" type="button" aria-label="Limpiar posición 3">&times;</button>
+                </div>
+                <input class="slot-input" id="slotInput2" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="O, Cl, F..." aria-label="Posición 3 Anión" />
+                <div class="slot-meta">
+                  <span class="slot-sub" id="slotSub2">Mayor EN</span>
+                  <span class="slot-en" id="slotEN2"></span>
+                </div>
+                <div class="slot-valences" id="slotVals2">
+                  <span class="val-placeholder">Val. (− y 0)</span>
+                </div>
+                <div class="slot-warn" id="slotWarn2"></div>
+              </div>
+            </div>
+
+            <!-- Panel de autocompletado unificado ancho completo -->
+            <div class="autocomplete-panel" id="acPanel" role="listbox" aria-label="Sugerencias de elementos"></div>
+          </div>
+
+          <!-- VALIDADOR COMPACTO EN VIVO -->
+          <div class="live-validator" id="liveValidator">
+            Toca una casilla para escribir o elige elementos desde la Tabla Periódica.
+          </div>
+
+          <!-- BARRA DE BOTONES TÁCTILES (>= 46px) -->
+          <div class="input-actions-row">
+            <button
+              class="btn-reorder"
+              id="btnReorder"
+              type="button"
+              disabled
+              title="Selecciona 3 elementos para comprobar si se pueden reordenar."
+            >
+              ⇄ Reordenar
+            </button>
+            <button class="btn btn-primary btn-submit-main" id="btnSubmit" type="button" disabled>
+              Probar molécula
+            </button>
+          </div>
+          <div class="reorder-hint" id="reorderHint"></div>
+        </div>
+
+        <!-- PESTAÑAS MÓVILES (< 900px) -->
+        <nav class="mobile-tabs" role="tablist" aria-label="Vistas del juego">
+          <button class="mobile-tab-btn active" id="tabBtnBoard" type="button" role="tab" aria-selected="true">
+            🧪 Tablero (8)
+          </button>
+          <button class="mobile-tab-btn" id="tabBtnTable" type="button" role="tab" aria-selected="false">
+            ⚛️ Tabla Periódica
+          </button>
+        </nav>
+
+        <!-- PANEL TABLERO DE 8 INTENTOS -->
+        <div class="card tab-panel" id="panelBoard">
+          <div class="card-header">
+            <span class="card-title">Historial de intentos (8)</span>
+            <span class="card-subtitle">Fórmula · Valencias</span>
+          </div>
+          <div class="board" id="attemptsBoard" aria-label="Historial de 8 intentos"></div>
+        </div>
+      </section>
+
+      <!-- COLUMNA DERECHA (O PESTAÑA 2 EN MÓVIL): TABLA PERIÓDICA INTERACTIVA -->
+      <section class="right-column tab-panel mobile-hidden" id="panelTable">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Tabla Periódica (118)</span>
+            <span class="card-subtitle">Punto azul = admite E₃ (0)</span>
+          </div>
+
+          <!-- MINI-RESUMEN DE CASILLAS Y ÚLTIMO INTENTO -->
+          <div class="pt-mini-summary">
+            <div class="mini-slots-strip" id="miniSlotsStrip" aria-label="Resumen de las 3 casillas"></div>
+            <div class="mini-last-attempt" id="miniLastAttempt">Sin intentos aún</div>
+          </div>
+
+          <!-- INSPECTOR COMPACTO CON BOTÓN "Poner en Pos. X" -->
+          <div class="inspector-bar">
+            <div class="inspector-top">
+              <div class="inspector-main">
+                <div class="inspector-badge">
+                  <span class="iz" id="inspZ">—</span>
+                  <span class="isym" id="inspSym">?</span>
+                </div>
+                <div class="inspector-info">
+                  <h3 id="inspName">Toca un elemento</h3>
+                  <p id="inspCat">Consulta Z, EN y valencias (incluyendo 0).</p>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-put-slot" id="btnPutInSlot" type="button" disabled>
+                Poner en Pos. 1
+              </button>
+            </div>
+            <div class="inspector-metrics">
+              <div class="metric-chip"><span>EN:</span><strong id="inspEN">—</strong></div>
+              <div class="metric-chip"><span>Valencias:</span><strong id="inspVal">—</strong></div>
+            </div>
+          </div>
+
+          <!-- FILTROS RÁPIDOS Y TOGGLE DESLIZAR / AJUSTAR -->
+          <div class="pt-toolbar">
+            <div class="pt-filters" role="group" aria-label="Filtros de tabla periódica">
+              <button class="filter-pill active" id="filterAll" type="button">Todos</button>
+              <button class="filter-pill" id="filterNonMetals" type="button">No metales y metaloides</button>
+              <button class="filter-pill" id="filterHideAbsent" type="button">Ocultar descartados</button>
+            </div>
+            <button class="pt-mode-toggle" id="btnToggleFit" type="button">↔️ Deslizar</button>
+          </div>
+
+          <!-- LEYENDA -->
+          <div class="legend">
+            <span class="legend-item"><i class="legend-dot dot-correct"></i> Exacto</span>
+            <span class="legend-item"><i class="legend-dot dot-present"></i> Otra pos.</span>
+            <span class="legend-item"><i class="legend-dot dot-absent"></i> Descartado</span>
+            <span class="legend-item"><i class="legend-dot dot-homo"></i> E₃ (0)</span>
+          </div>
+
+          <!-- INDICADOR DE SCROLL EN MÓVIL -->
+          <div class="ptable-scroll-hint" id="ptScrollHint">
+            <span>← Desliza la tabla horizontalmente →</span>
+            <span>Toca 2 veces para insertar</span>
+          </div>
+
+          <!-- TABLA PERIÓDICA 118 ELEMENTOS -->
+          <div class="ptable-viewport">
+            <div class="ptable-scroll" id="ptScroll">
+              <div class="ptable-grid" id="periodicTable" aria-label="Tabla periódica de 118 elementos"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL BOTTOM-SHEET: PISTAS PROGRESIVAS -->
+  <div class="modal-backdrop" id="hintsModal" role="dialog" aria-modal="true" aria-labelledby="hintsModalTitle">
+    <div class="modal">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="hintsModalTitle">💡 Pistas progresivas</h2>
+        <button class="modal-close" id="btnCloseHints" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="hints-modal-list" id="hintsModalList"></div>
+      <button class="btn btn-hint" id="btnRevealNextHint" type="button" style="min-height: 46px; font-size: 0.9rem;">
+        Revelar Pista 1 / 3
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL BOTTOM-SHEET: RESULTADO FINAL -->
+  <div class="modal-backdrop" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="modal">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="resultTitle">Resultado</h2>
+        <button class="modal-close" id="btnCloseResult" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <p id="resultSubtitle" style="color: var(--text-secondary); font-size: 0.88rem;"></p>
+
+      <div class="formula-showcase">
+        <div class="result-type-badge" id="resultTypeBadge"></div>
+        <div class="formula-big" id="resultFormula"></div>
+        <div class="charge-equation" id="resultEquation"></div>
+      </div>
+
+      <div class="result-elements" id="resultElements"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-copy" id="btnCopyResult" type="button">📋 Copiar resultado</button>
+        <button class="btn btn-primary" id="btnNewGameModal" type="button">Jugar en Modo Libre</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL BOTTOM-SHEET: CÓMO JUGAR -->
+  <div class="modal-backdrop" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+    <div class="modal">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="rulesTitle">❓ ¿Cómo jugar ChemWordle?</h2>
+        <button class="modal-close" id="btnCloseRules" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <ul class="rules-list">
+        <li>
+          <strong>Objetivo:</strong> Adivina la molécula neutra de 3 posiciones en <strong>8 intentos</strong>. Puede ser <strong>ternaria clásica</strong> (~65%, ej. H₂SO₄), con <strong>elemento repetido / triatómica heteronuclear</strong> (~27%, ej. H₂O, CO₂, CaCl₂, Al₂O₃) o <strong>triatómica homonuclear</strong> (~8%, ej. O₃, S₃, C₃).
+        </li>
+        <li>
+          <strong>Reglas químicas:</strong> Cumple <strong>EN₁ ≤ EN₂ ≤ EN₃</strong> y carga neta igual a <strong>0</strong>. Pos 1 es Catión (+), Pos 2 Central (±) y Pos 3 Anión (−), o los tres con estado <strong>0</strong> en triatómicas homonucleares.
+        </li>
+        <li>
+          <strong>Valencias y ⇄ Reordenar:</strong> Las valencias que balancean la molécula brillan en verde con <strong>✓</strong> (toca los chips con borde verde discontinuo para alternar variantes). Si los 3 átomos están en mal orden pero existe una permutación válida, pulsa el botón blanco <strong>⇄ Reordenar</strong>.
+        </li>
+        <li>
+          <strong>Colores Wordle (2 pasadas):</strong> 🟢 Posición exacta · 🟡 Presente en otra posición (respetando multiplicidad) · 🔴 No pertenece. La tabla periódica conserva siempre el mejor color (<strong>Verde &gt; Amarillo &gt; Rojo</strong>).
+        </li>
+      </ul>
+      <button class="btn btn-primary" id="btnAcceptRules" type="button" style="min-height: 46px; width: 100%; font-size: 0.9rem;">
+        ¡Entendido, a jugar!
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ==========================================================================
+         1. BASE DE DATOS INTERNA DE LOS 118 ELEMENTOS QUÍMICOS
+         ========================================================================== */
+      const CATEGORY_LABELS = {
+        'no-metal': 'No metal',
+        'halogeno': 'Halógeno',
+        'gas-noble': 'Gas noble',
+        'metaloide': 'Metaloide',
+        'alcalino': 'Metal alcalino',
+        'alcalinoterreo': 'Metal alcalinotérreo',
+        'transicion': 'Metal de transición',
+        'metal-post': 'Metal post-transición',
+        'lantanido': 'Lantánido',
+        'actinido': 'Actínido'
+      };
+
+      const HOMONUCLEAR_SYMBOLS = new Set(['C', 'N', 'O', 'S', 'P', 'Se', 'I', 'B', 'Si', 'H', 'Cl', 'Br']);
+
+      // [z, sym, name, cat, en, row, col, nonZeroValences]
+      const RAW_ELEMENTS = [
+        [1, 'H', 'Hidrógeno', 'no-metal', 2.20, 1, 1, [1, -1]],
+        [2, 'He', 'Helio', 'gas-noble', null, 1, 18, []],
+        [3, 'Li', 'Litio', 'alcalino', 0.98, 2, 1, [1]],
+        [4, 'Be', 'Berilio', 'alcalinoterreo', 1.57, 2, 2, [2]],
+        [5, 'B', 'Boro', 'metaloide', 2.04, 2, 13, [3, -3]],
+        [6, 'C', 'Carbono', 'no-metal', 2.55, 2, 14, [4, 2, -4]],
+        [7, 'N', 'Nitrógeno', 'no-metal', 3.04, 2, 15, [5, 4, 3, 2, 1, -3]],
+        [8, 'O', 'Oxígeno', 'no-metal', 3.44, 2, 16, [-2, -1]],
+        [9, 'F', 'Flúor', 'halogeno', 3.98, 2, 17, [-1]],
+        [10, 'Ne', 'Neón', 'gas-noble', null, 2, 18, []],
+
+        [11, 'Na', 'Sodio', 'alcalino', 0.93, 3, 1, [1]],
+        [12, 'Mg', 'Magnesio', 'alcalinoterreo', 1.31, 3, 2, [2]],
+        [13, 'Al', 'Aluminio', 'metal-post', 1.61, 3, 13, [3]],
+        [14, 'Si', 'Silicio', 'metaloide', 1.90, 3, 14, [4, 2, -4]],
+        [15, 'P', 'Fósforo', 'no-metal', 2.19, 3, 15, [5, 3, 1, -3]],
+        [16, 'S', 'Azufre', 'no-metal', 2.58, 3, 16, [6, 4, 2, -2]],
+        [17, 'Cl', 'Cloro', 'halogeno', 3.16, 3, 17, [7, 5, 3, 1, -1]],
+        [18, 'Ar', 'Argón', 'gas-noble', null, 3, 18, []],
+
+        [19, 'K', 'Potasio', 'alcalino', 0.82, 4, 1, [1]],
+        [20, 'Ca', 'Calcio', 'alcalinoterreo', 1.00, 4, 2, [2]],
+        [21, 'Sc', 'Escandio', 'transicion', 1.36, 4, 3, [3]],
+        [22, 'Ti', 'Titanio', 'transicion', 1.54, 4, 4, [4, 3, 2]],
+        [23, 'V', 'Vanadio', 'transicion', 1.63, 4, 5, [5, 4, 3, 2]],
+        [24, 'Cr', 'Cromo', 'transicion', 1.66, 4, 6, [6, 3, 2]],
+        [25, 'Mn', 'Manganeso', 'transicion', 1.55, 4, 7, [7, 6, 4, 3, 2]],
+        [26, 'Fe', 'Hierro', 'transicion', 1.83, 4, 8, [3, 2]],
+        [27, 'Co', 'Cobalto', 'transicion', 1.88, 4, 9, [3, 2]],
+        [28, 'Ni', 'Níquel', 'transicion', 1.91, 4, 10, [3, 2]],
+        [29, 'Cu', 'Cobre', 'transicion', 1.90, 4, 11, [2, 1]],
+        [30, 'Zn', 'Zinc', 'transicion', 1.65, 4, 12, [2]],
+        [31, 'Ga', 'Galio', 'metal-post', 1.81, 4, 13, [3]],
+        [32, 'Ge', 'Germanio', 'metaloide', 2.01, 4, 14, [4, 2, -4]],
+        [33, 'As', 'Arsénico', 'metaloide', 2.18, 4, 15, [5, 3, -3]],
+        [34, 'Se', 'Selenio', 'no-metal', 2.55, 4, 16, [6, 4, 2, -2]],
+        [35, 'Br', 'Bromo', 'halogeno', 2.96, 4, 17, [7, 5, 3, 1, -1]],
+        [36, 'Kr', 'Kriptón', 'gas-noble', 3.00, 4, 18, []],
+
+        [37, 'Rb', 'Rubidio', 'alcalino', 0.82, 5, 1, [1]],
+        [38, 'Sr', 'Estroncio', 'alcalinoterreo', 0.95, 5, 2, [2]],
+        [39, 'Y', 'Itrio', 'transicion', 1.22, 5, 3, [3]],
+        [40, 'Zr', 'Circonio', 'transicion', 1.33, 5, 4, [4]],
+        [41, 'Nb', 'Niobio', 'transicion', 1.60, 5, 5, [5, 3]],
+        [42, 'Mo', 'Molibdeno', 'transicion', 2.16, 5, 6, [6, 4, 3]],
+        [43, 'Tc', 'Tecnecio', 'transicion', 1.90, 5, 7, [7, 4]],
+        [44, 'Ru', 'Rutenio', 'transicion', 2.20, 5, 8, [8, 4, 3]],
+        [45, 'Rh', 'Rodio', 'transicion', 2.28, 5, 9, [3]],
+        [46, 'Pd', 'Paladio', 'transicion', 2.20, 5, 10, [4, 2]],
+        [47, 'Ag', 'Plata', 'transicion', 1.93, 5, 11, [1]],
+        [48, 'Cd', 'Cadmio', 'transicion', 1.69, 5, 12, [2]],
+        [49, 'In', 'Indio', 'metal-post', 1.78, 5, 13, [3]],
+        [50, 'Sn', 'Estaño', 'metal-post', 1.96, 5, 14, [4, 2]],
+        [51, 'Sb', 'Antimonio', 'metaloide', 2.05, 5, 15, [5, 3, -3]],
+        [52, 'Te', 'Telurio', 'metaloide', 2.10, 5, 16, [6, 4, -2]],
+        [53, 'I', 'Yodo', 'halogeno', 2.66, 5, 17, [7, 5, 3, 1, -1]],
+        [54, 'Xe', 'Xenón', 'gas-noble', 2.60, 5, 18, []],
+
+        [55, 'Cs', 'Cesio', 'alcalino', 0.79, 6, 1, [1]],
+        [56, 'Ba', 'Bario', 'alcalinoterreo', 0.89, 6, 2, [2]],
+        [57, 'La', 'Lantano', 'lantanido', 1.10, 8, 4, [3]],
+        [58, 'Ce', 'Cerio', 'lantanido', 1.12, 8, 5, [4, 3]],
+        [59, 'Pr', 'Praseodimio', 'lantanido', 1.13, 8, 6, [3]],
+        [60, 'Nd', 'Neodimio', 'lantanido', 1.14, 8, 7, [3]],
+        [61, 'Pm', 'Prometio', 'lantanido', 1.13, 8, 8, [3]],
+        [62, 'Sm', 'Samario', 'lantanido', 1.17, 8, 9, [3, 2]],
+        [63, 'Eu', 'Europio', 'lantanido', 1.20, 8, 10, [3, 2]],
+        [64, 'Gd', 'Gadolinio', 'lantanido', 1.20, 8, 11, [3]],
+        [65, 'Tb', 'Terbio', 'lantanido', 1.20, 8, 12, [3]],
+        [66, 'Dy', 'Disprosio', 'lantanido', 1.22, 8, 13, [3]],
+        [67, 'Ho', 'Holmio', 'lantanido', 1.23, 8, 14, [3]],
+        [68, 'Er', 'Erbio', 'lantanido', 1.24, 8, 15, [3]],
+        [69, 'Tm', 'Tulio', 'lantanido', 1.25, 8, 16, [3]],
+        [70, 'Yb', 'Iterbio', 'lantanido', 1.10, 8, 17, [3, 2]],
+        [71, 'Lu', 'Lutecio', 'lantanido', 1.27, 8, 18, [3]],
+
+        [72, 'Hf', 'Hafnio', 'transicion', 1.30, 6, 4, [4]],
+        [73, 'Ta', 'Tántalo', 'transicion', 1.50, 6, 5, [5]],
+        [74, 'W', 'Wolframio', 'transicion', 2.36, 6, 6, [6, 4]],
+        [75, 'Re', 'Renio', 'transicion', 1.90, 6, 7, [7, 4]],
+        [76, 'Os', 'Osmio', 'transicion', 2.20, 6, 8, [8, 4]],
+        [77, 'Ir', 'Iridio', 'transicion', 2.20, 6, 9, [4, 3]],
+        [78, 'Pt', 'Platino', 'transicion', 2.28, 6, 10, [4, 2]],
+        [79, 'Au', 'Oro', 'transicion', 2.54, 6, 11, [3, 1]],
+        [80, 'Hg', 'Mercurio', 'transicion', 2.00, 6, 12, [2, 1]],
+        [81, 'Tl', 'Talio', 'metal-post', 1.62, 6, 13, [3, 1]],
+        [82, 'Pb', 'Plomo', 'metal-post', 2.33, 6, 14, [4, 2]],
+        [83, 'Bi', 'Bismuto', 'metal-post', 2.02, 6, 15, [5, 3]],
+        [84, 'Po', 'Polonio', 'metaloide', 2.00, 6, 16, [4, 2, -2]],
+        [85, 'At', 'Astato', 'halogeno', 2.20, 6, 17, [5, 3, 1, -1]],
+        [86, 'Rn', 'Radón', 'gas-noble', 2.20, 6, 18, []],
+
+        [87, 'Fr', 'Francio', 'alcalino', 0.70, 7, 1, [1]],
+        [88, 'Ra', 'Radio', 'alcalinoterreo', 0.90, 7, 2, [2]],
+        [89, 'Ac', 'Actinio', 'actinido', 1.10, 9, 4, [3]],
+        [90, 'Th', 'Torio', 'actinido', 1.30, 9, 5, [4]],
+        [91, 'Pa', 'Protactinio', 'actinido', 1.50, 9, 6, [5, 4]],
+        [92, 'U', 'Uranio', 'actinido', 1.38, 9, 7, [6, 4]],
+        [93, 'Np', 'Neptunio', 'actinido', 1.36, 9, 8, [5, 4]],
+        [94, 'Pu', 'Plutonio', 'actinido', 1.28, 9, 9, [4, 3]],
+        [95, 'Am', 'Americio', 'actinido', 1.30, 9, 10, [3]],
+        [96, 'Cm', 'Curio', 'actinido', 1.30, 9, 11, [3]],
+        [97, 'Bk', 'Berkelio', 'actinido', 1.30, 9, 12, [3]],
+        [98, 'Cf', 'Californio', 'actinido', 1.30, 9, 13, [3]],
+        [99, 'Es', 'Einstenio', 'actinido', 1.30, 9, 14, [3]],
+        [100, 'Fm', 'Fermio', 'actinido', 1.30, 9, 15, [3]],
+        [101, 'Md', 'Mendelevio', 'actinido', 1.30, 9, 16, [3]],
+        [102, 'No', 'Nobelio', 'actinido', 1.30, 9, 17, [3, 2]],
+        [103, 'Lr', 'Lawrencio', 'actinido', 1.30, 9, 18, [3]],
+
+        [104, 'Rf', 'Rutherfordio', 'transicion', 1.30, 7, 4, [4]],
+        [105, 'Db', 'Dubnio', 'transicion', 1.50, 7, 5, [5]],
+        [106, 'Sg', 'Seaborgio', 'transicion', 1.90, 7, 6, [6]],
+        [107, 'Bh', 'Bohrio', 'transicion', 2.00, 7, 7, [7]],
+        [108, 'Hs', 'Hasio', 'transicion', 2.10, 7, 8, [8]],
+        [109, 'Mt', 'Meitnerio', 'transicion', 2.10, 7, 9, [3]],
+        [110, 'Ds', 'Darmstatio', 'transicion', 2.10, 7, 10, [2]],
+        [111, 'Rg', 'Roentgenio', 'transicion', 2.10, 7, 11, [3]],
+        [112, 'Cn', 'Copernicio', 'transicion', 2.00, 7, 12, [2]],
+        [113, 'Nh', 'Nihonio', 'metal-post', 1.90, 7, 13, [1]],
+        [114, 'Fl', 'Flerovio', 'metal-post', 2.00, 7, 14, [2]],
+        [115, 'Mc', 'Moscovio', 'metal-post', 2.00, 7, 15, [3, 1]],
+        [116, 'Lv', 'Livermorio', 'metal-post', 2.10, 7, 16, [2]],
+        [117, 'Ts', 'Teneso', 'halogeno', 2.20, 7, 17, [1, -1]],
+        [118, 'Og', 'Oganesón', 'gas-noble', null, 7, 18, []]
+      ];
+
+      function normalizeText(str) {
+        return String(str || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .trim();
+      }
+
+      function computeElementWeight(sym, cat, valences) {
+        if (!valences || valences.length === 0) return 0;
+        const hasPos = valences.some(v => v > 0);
+        const hasNeg = valences.some(v => v < 0);
+        const isAmbivalent = hasPos && hasNeg;
+
+        const coreAmbivalent = new Set(['H', 'C', 'N', 'P', 'S', 'Cl', 'Br', 'I', 'Si', 'B', 'As', 'Se', 'Te']);
+        if (coreAmbivalent.has(sym)) return 24;
+        if (isAmbivalent) return 15;
+        if (sym === 'O') return 26;
+        if (sym === 'F') return 14;
+
+        const commonCations = new Set(['Li', 'Na', 'K', 'Mg', 'Ca', 'Ba', 'Sr', 'Al']);
+        if (commonCations.has(sym)) return 10;
+
+        const commonMetals = new Set(['Fe', 'Cu', 'Zn', 'Ag', 'Mn', 'Cr', 'Ni', 'Co', 'Pb', 'Sn', 'Hg', 'Au', 'Ti', 'V']);
+        if (commonMetals.has(sym)) return 6;
+
+        if (cat === 'alcalino' || cat === 'alcalinoterreo') return 4;
+        if (cat === 'transicion' || cat === 'metal-post') return 2;
+        return 1;
+      }
+
+      const ELEMENTS = RAW_ELEMENTS.map(([z, sym, name, cat, en, row, col, nonZeroValences]) => {
+        const allValences = Array.from(new Set([...nonZeroValences, 0])).sort((a, b) => a - b);
+        return {
+          z,
+          sym,
+          name,
+          nameNorm: normalizeText(name),
+          symNorm: sym.toLowerCase(),
+          cat,
+          catLabel: CATEGORY_LABELS[cat] || cat,
+          en,
+          row,
+          col,
+          valences: nonZeroValences,
+          allValences,
+          homonuclear: HOMONUCLEAR_SYMBOLS.has(sym),
+          weight: computeElementWeight(sym, cat, nonZeroValences)
+        };
+      });
+
+      const ELEMENT_BY_Z = new Map(ELEMENTS.map(e => [e.z, e]));
+
+      /* ==========================================================================
+         2. MOTOR QUÍMICO Y GENERADOR DETERMINISTA (FNV-1a + MULBERRY32)
+         ========================================================================== */
+      function gcd(a, b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b !== 0) {
+          const t = b;
+          b = a % b;
+          a = t;
+        }
+        return a;
+      }
+
+      function gcd3(a, b, c) {
+        return gcd(gcd(a, b), c);
+      }
+
+      function formatSigned(v) {
+        if (v === 0) return '0';
+        return v > 0 ? '+' + v : String(v);
+      }
+
+      function toSubHTML(n) {
+        return n > 1 ? '<sub>' + n + '</sub>' : '';
+      }
+
+      function buildCondensedFormulaHTML(elements, subscripts) {
+        const order = [];
+        const counts = new Map();
+        for (let i = 0; i < 3; i++) {
+          const s = elements[i].sym;
+          if (!counts.has(s)) {
+            order.push(s);
+            counts.set(s, 0);
+          }
+          counts.set(s, counts.get(s) + subscripts[i]);
+        }
+        return order.map(s => s + toSubHTML(counts.get(s))).join('');
+      }
+
+      function checkSingleSlotRole(el, slotIdx, selectedTriple) {
+        if (!el) return { ok: true, msg: '' };
+        const filled = selectedTriple.filter(Boolean);
+        const allSameHomo = filled.length > 0 && filled.every(x => x.z === el.z && x.homonuclear);
+
+        if (el.en === null) return { ok: false, msg: 'Gas noble' };
+        if (slotIdx === 0 && !el.valences.some(v => v > 0) && !allSameHomo) return { ok: false, msg: 'Sin val. (+)' };
+        if (slotIdx === 1 && el.valences.length === 0 && !allSameHomo) return { ok: false, msg: 'Sin val. (±)' };
+        if (slotIdx === 2 && !el.valences.some(v => v < 0) && !allSameHomo) return { ok: false, msg: 'Sin val. (−)' };
+        return { ok: true, msg: '' };
+      }
+
+      function evaluateMoleculeSolutions(e1, e2, e3) {
+        if (!e1 || !e2 || !e3) {
+          return { valid: false, reason: 'Completa las 3 posiciones.', conflictSlots: [] };
+        }
+
+        const missingEN = [e1, e2, e3]
+          .map((e, i) => (e.en === null ? i : -1))
+          .filter(i => i !== -1);
+
+        if (missingEN.length > 0) {
+          const names = missingEN.map(i => [e1, e2, e3][i].name + ' (' + [e1, e2, e3][i].sym + ')').join(', ');
+          return {
+            valid: false,
+            reason: names + ' es un gas noble sin electronegatividad.',
+            conflictSlots: missingEN
+          };
+        }
+
+        const uniqueCount = new Set([e1.z, e2.z, e3.z]).size;
+
+        /* CASO A: TRIATÓMICA HOMONUCLEAR [A, A, A] (0, 0, 0) */
+        if (uniqueCount === 1) {
+          if (!e1.homonuclear) {
+            return {
+              valid: false,
+              reason: e1.name + ' (' + e1.sym + ') no forma triatómicas homonucleares neutras (' + e1.sym + '₃). Prueba con elementos con punto azul.',
+              conflictSlots: [0, 1, 2]
+            };
+          }
+          const sol = {
+            type: 'homonuclear',
+            typeLabel: 'Triatómica Homonuclear',
+            elements: [e1, e2, e3],
+            subscripts: [1, 1, 1],
+            valences: [0, 0, 0],
+            isExactTriatomic: true,
+            formulaHTML: e1.sym + '<sub>3</sub>',
+            equation: '1(0) + 1(0) + 1(0) = 0',
+            key: e1.z + '-' + e2.z + '-' + e3.z,
+            valKey: '0,0,0',
+            score: 0
+          };
+          return { valid: true, molecule: sol, solutions: [sol], conflictSlots: [] };
+        }
+
+        /* VALIDACIÓN EN1 <= EN2 <= EN3 */
+        if (!(e1.en <= e2.en && e2.en <= e3.en)) {
+          const conflicts = [];
+          if (e1.en > e2.en) conflicts.push(0, 1);
+          if (e2.en > e3.en) conflicts.push(1, 2);
+          return {
+            valid: false,
+            reason: 'Orden de electronegatividad inválido (EN: ' + e1.en.toFixed(2) + ', ' + e2.en.toFixed(2) + ', ' + e3.en.toFixed(2) + '). Debe ser EN₁ ≤ EN₂ ≤ EN₃.',
+            conflictSlots: Array.from(new Set(conflicts))
+          };
+        }
+
+        const posV1 = e1.valences.filter(v => v > 0);
+        const negV3 = e3.valences.filter(v => v < 0);
+
+        if (posV1.length === 0 && negV3.length === 0) {
+          return {
+            valid: false,
+            reason: e1.sym + ' no tiene valencia (+) para Catión y ' + e3.sym + ' no tiene valencia (−) para Anión.',
+            conflictSlots: [0, 2]
+          };
+        }
+        if (posV1.length === 0) {
+          return {
+            valid: false,
+            reason: e1.name + ' (' + e1.sym + ') no posee valencia positiva (+) para Posición 1.',
+            conflictSlots: [0]
+          };
+        }
+        if (negV3.length === 0) {
+          return {
+            valid: false,
+            reason: e3.name + ' (' + e3.sym + ') no posee valencia negativa (−) para Posición 3.',
+            conflictSlots: [2]
+          };
+        }
+
+        /* CASO B: ELEMENTO REPETIDO / TRIATÓMICA HETERONUCLEAR */
+        if (uniqueCount === 2) {
+          const isAAB = (e1.z === e2.z && e2.z !== e3.z);
+          const isABB = (e1.z !== e2.z && e2.z === e3.z);
+          if (!isAAB && !isABB) {
+            return {
+              valid: false,
+              reason: 'Con elementos repetidos, agrúpalos juntos por EN ([A, A, B] o [A, B, B]).',
+              conflictSlots: [0, 1, 2]
+            };
+          }
+
+          const v2List = isAAB ? e2.valences.filter(v => v > 0) : e2.valences.filter(v => v < 0);
+          if (v2List.length === 0) {
+            return {
+              valid: false,
+              reason: e2.name + ' (' + e2.sym + ') no tiene valencia compatible en Posición 2.',
+              conflictSlots: [1]
+            };
+          }
+
+          const byValKey = new Map();
+          for (const v1 of posV1) {
+            for (const v2 of v2List) {
+              for (const v3 of negV3) {
+                let bestForVal = null;
+                for (let x = 1; x <= 6; x++) {
+                  for (let y = 1; y <= 6; y++) {
+                    for (let z = 1; z <= 6; z++) {
+                      if (x * v1 + y * v2 + z * v3 !== 0) continue;
+                      const countA = isAAB ? (x + y) : x;
+                      const countB = isAAB ? z : (y + z);
+                      if (gcd(countA, countB) !== 1) continue;
+                      if (isAAB && x > y) continue;
+                      if (isABB && y > z) continue;
+
+                      const isExact111 = (x === 1 && y === 1 && z === 1);
+                      const sameRepVal = isAAB ? (v1 === v2) : (v2 === v3);
+                      const score =
+                        (isExact111 ? -500 : 0) +
+                        (sameRepVal ? -140 : 0) +
+                        (countA + countB) * 12 +
+                        Math.max(countA, countB) * 4;
+
+                      if (!bestForVal || score < bestForVal.score) {
+                        const elements = [e1, e2, e3];
+                        const subscripts = [x, y, z];
+                        const valences = [v1, v2, v3];
+                        bestForVal = {
+                          type: 'repeated',
+                          typeLabel: isExact111 ? 'Triatómica Heteronuclear' : 'Con Elemento Repetido',
+                          elements,
+                          subscripts,
+                          valences,
+                          isExactTriatomic: isExact111,
+                          formulaHTML: buildCondensedFormulaHTML(elements, subscripts),
+                          equation: x + '(' + formatSigned(v1) + ') + ' + y + '(' + formatSigned(v2) + ') + ' + z + '(' + formatSigned(v3) + ') = 0',
+                          key: e1.z + '-' + e2.z + '-' + e3.z,
+                          valKey: v1 + ',' + v2 + ',' + v3,
+                          score
+                        };
+                      }
+                    }
+                  }
+                }
+                if (bestForVal) byValKey.set(bestForVal.valKey, bestForVal);
+              }
+            }
+          }
+
+          const solutions = Array.from(byValKey.values()).sort((a, b) => a.score - b.score);
+          if (solutions.length === 0) {
+            return {
+              valid: false,
+              reason: 'Ninguna combinación de valencias logra carga neutra (0) simplificada para [' + e1.sym + ', ' + e2.sym + ', ' + e3.sym + '].',
+              conflictSlots: [0, 1, 2]
+            };
+          }
+          return { valid: true, molecule: solutions[0], solutions, conflictSlots: [] };
+        }
+
+        /* CASO C: TERNARIA CLÁSICA [A, B, C] */
+        const nonZeroV2 = e2.valences.filter(v => v !== 0);
+        if (nonZeroV2.length === 0) {
+          return {
+            valid: false,
+            reason: e2.name + ' (' + e2.sym + ') no posee valencias activas para Posición 2.',
+            conflictSlots: [1]
+          };
+        }
+
+        const byValKey = new Map();
+        for (const v1 of posV1) {
+          for (const v2 of nonZeroV2) {
+            for (const v3 of negV3) {
+              let bestForVal = null;
+              for (let x = 1; x <= 10; x++) {
+                for (let y = 1; y <= 10; y++) {
+                  const partial = x * v1 + y * v2;
+                  if (partial <= 0) continue;
+                  const absV3 = -v3;
+                  if (partial % absV3 !== 0) continue;
+                  const z = partial / absV3;
+                  if (z < 1 || z > 10) continue;
+                  if (gcd3(x, y, z) !== 1) continue;
+
+                  const isExact111 = (x === 1 && y === 1 && z === 1);
+                  const score =
+                    (isExact111 ? -40 : 0) +
+                    (x + y + z) * 10 +
+                    Math.max(x, y, z) * 3 +
+                    (v2 > 0 ? 0 : 4);
+
+                  if (!bestForVal || score < bestForVal.score) {
+                    const elements = [e1, e2, e3];
+                    const subscripts = [x, y, z];
+                    const valences = [v1, v2, v3];
+                    bestForVal = {
+                      type: 'ternary',
+                      typeLabel: 'Ternaria Clásica',
+                      elements,
+                      subscripts,
+                      valences,
+                      isExactTriatomic: isExact111,
+                      formulaHTML: buildCondensedFormulaHTML(elements, subscripts),
+                      equation: x + '(' + formatSigned(v1) + ') + ' + y + '(' + formatSigned(v2) + ') + ' + z + '(' + formatSigned(v3) + ') = 0',
+                      key: e1.z + '-' + e2.z + '-' + e3.z,
+                      valKey: v1 + ',' + v2 + ',' + v3,
+                      score
+                    };
+                  }
+                }
+              }
+              if (bestForVal) byValKey.set(bestForVal.valKey, bestForVal);
+            }
+          }
+        }
+
+        const solutions = Array.from(byValKey.values()).sort((a, b) => a.score - b.score);
+        if (solutions.length === 0) {
+          return {
+            valid: false,
+            reason: 'Ninguna combinación de valencias logra carga neutra (0) para [' + e1.sym + ', ' + e2.sym + ', ' + e3.sym + '].',
+            conflictSlots: [0, 1, 2]
+          };
+        }
+        return { valid: true, molecule: solutions[0], solutions, conflictSlots: [] };
+      }
+
+      /* Determinismo por fecha: FNV-1a + Mulberry32 */
+      function getLocalDateInfo() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return { iso: yyyy + '-' + mm + '-' + dd, display: dd + '/' + mm + '/' + yyyy };
+      }
+
+      function hashStringToSeed(str) {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+          a = (a + 0x6D2B79F5) >>> 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function pickWeighted(pool, rng) {
+        let total = 0;
+        for (const el of pool) total += el.weight;
+        if (total <= 0) return null;
+        let r = rng() * total;
+        for (const el of pool) {
+          r -= el.weight;
+          if (r <= 0) return el;
+        }
+        return pool[pool.length - 1];
+      }
+
+      const usedTargetKeys = new Set();
+
+      function generateTargetMolecule(rng, ignoreUsed) {
+        const poolPos1 = ELEMENTS.filter(e => e.weight > 0 && e.en !== null && e.valences.some(v => v > 0));
+        const poolPos2 = ELEMENTS.filter(e => e.weight > 0 && e.en !== null && e.valences.some(v => v !== 0));
+        const poolPos3 = ELEMENTS.filter(e => e.weight > 0 && e.en !== null && e.valences.some(v => v < 0));
+        const poolHomo = ELEMENTS.filter(e => e.homonuclear);
+
+        const roll = rng();
+        const desiredMode = roll < 0.65 ? 'ternary' : (roll < 0.92 ? 'repeated' : 'homonuclear');
+
+        if (desiredMode === 'homonuclear') {
+          const candidates = ignoreUsed
+            ? poolHomo
+            : poolHomo.filter(e => !usedTargetKeys.has(e.z + '-' + e.z + '-' + e.z));
+          const chosen = pickWeighted(candidates.length > 0 ? candidates : poolHomo, rng);
+          if (chosen) {
+            const res = evaluateMoleculeSolutions(chosen, chosen, chosen);
+            if (res.valid) {
+              if (!ignoreUsed) {
+                usedTargetKeys.add(res.molecule.key);
+                if (usedTargetKeys.size > 160) usedTargetKeys.clear();
+              }
+              return res.molecule;
+            }
+          }
+        }
+
+        if (desiredMode === 'repeated') {
+          const preferExactTriatomic = rng() < 0.78;
+          for (let attempt = 0; attempt < 900; attempt++) {
+            const isAAB = rng() < 0.5;
+            const eAnion = pickWeighted(poolPos3, rng);
+            if (!eAnion) continue;
+            const validCations = poolPos1.filter(e => e.z !== eAnion.z && e.en < eAnion.en);
+            if (validCations.length === 0) continue;
+            const eCation = pickWeighted(validCations, rng);
+            if (!eCation) continue;
+
+            const triplet = isAAB ? [eCation, eCation, eAnion] : [eCation, eAnion, eAnion];
+            const res = evaluateMoleculeSolutions(triplet[0], triplet[1], triplet[2]);
+            if (!res.valid) continue;
+            if (!ignoreUsed && usedTargetKeys.has(res.molecule.key)) continue;
+            if (preferExactTriatomic && !res.molecule.isExactTriatomic && attempt < 600) continue;
+
+            if (!ignoreUsed) {
+              usedTargetKeys.add(res.molecule.key);
+              if (usedTargetKeys.size > 160) usedTargetKeys.clear();
+            }
+            return res.molecule;
+          }
+        }
+
+        for (let attempt = 0; attempt < 1800; attempt++) {
+          const e3 = pickWeighted(poolPos3, rng);
+          if (!e3) continue;
+          const validP2 = poolPos2.filter(e => e.z !== e3.z && e.en <= e3.en);
+          if (validP2.length === 0) continue;
+          const e2 = pickWeighted(validP2, rng);
+          if (!e2) continue;
+          const validP1 = poolPos1.filter(e => e.z !== e2.z && e.z !== e3.z && e.en <= e2.en && e.en < e3.en);
+          if (validP1.length === 0) continue;
+          const e1 = pickWeighted(validP1, rng);
+          if (!e1) continue;
+
+          const res = evaluateMoleculeSolutions(e1, e2, e3);
+          if (res.valid && (ignoreUsed || !usedTargetKeys.has(res.molecule.key))) {
+            if (!ignoreUsed) {
+              usedTargetKeys.add(res.molecule.key);
+              if (usedTargetKeys.size > 160) usedTargetKeys.clear();
+            }
+            return res.molecule;
+          }
+        }
+
+        return evaluateMoleculeSolutions(ELEMENT_BY_Z.get(1), ELEMENT_BY_Z.get(16), ELEMENT_BY_Z.get(8)).molecule;
+      }
+
+      /* Evaluación Wordle estricta en 2 pasadas */
+      function evaluateWordleTwoPass(guessElements, targetElements) {
+        const statuses = ['absent', 'absent', 'absent'];
+        const remainingCounts = new Map();
+
+        for (let i = 0; i < 3; i++) {
+          if (guessElements[i].z === targetElements[i].z) {
+            statuses[i] = 'correct';
+          } else {
+            const tz = targetElements[i].z;
+            remainingCounts.set(tz, (remainingCounts.get(tz) || 0) + 1);
+          }
+        }
+
+        for (let i = 0; i < 3; i++) {
+          if (statuses[i] === 'correct') continue;
+          const gz = guessElements[i].z;
+          const count = remainingCounts.get(gz) || 0;
+          if (count > 0) {
+            statuses[i] = 'present';
+            remainingCounts.set(gz, count - 1);
+          }
+        }
+        return statuses;
+      }
+
+      /* ==========================================================================
+         3. ESTADO GLOBAL Y REFERENCIAS DOM
+         ========================================================================== */
+      const MAX_ATTEMPTS = 8;
+      const STATE_PRIORITY = { unused: 0, absent: 1, present: 2, correct: 3 };
+      const DEFAULT_SUBS = ['Menor EN', 'EN media', 'Mayor EN'];
+      const DEFAULT_VAL_PLACEHOLDERS = ['Val. (+ y 0)', 'Val. (± y 0)', 'Val. (− y 0)'];
+
+      const gameState = {
+        mode: 'daily',
+        dailyDateISO: '',
+        dailyDateDisplay: '',
+        target: null,
+        attempts: [],
+        selected: [null, null, null],
+        activeSlot: 0,
+        currentEval: null,
+        selectedSolutionIdx: 0,
+        elementStatuses: new Map(),
+        hintsUsed: 0,
+        maxHints: 3,
+        hintQueue: [],
+        revealedHintsHTML: [],
+        gameOver: false,
+        won: false,
+        activeMobileTab: 'board',
+        inspectedEl: null,
+        ptCategoryFilter: 'all', // 'all' | 'nonmetals'
+        ptHideAbsent: false,
+        ptFitMode: false,
+        acSlotIdx: -1,
+        acMatches: [],
+        acHighlight: -1
+      };
+
+      const dom = {
+        btnModeDaily: document.getElementById('btnModeDaily'),
+        btnModeFree: document.getElementById('btnModeFree'),
+        dailyDateLabel: document.getElementById('dailyDateLabel'),
+        attemptCounter: document.getElementById('attemptCounter'),
+        btnHint: document.getElementById('btnHint'),
+        hintBtnCount: document.getElementById('hintBtnCount'),
+        btnRules: document.getElementById('btnRules'),
+        btnNewGameHeader: document.getElementById('btnNewGameHeader'),
+
+        slotsAnchor: document.getElementById('slotsAnchor'),
+        acPanel: document.getElementById('acPanel'),
+        liveValidator: document.getElementById('liveValidator'),
+        btnReorder: document.getElementById('btnReorder'),
+        reorderHint: document.getElementById('reorderHint'),
+        btnSubmit: document.getElementById('btnSubmit'),
+
+        tabBtnBoard: document.getElementById('tabBtnBoard'),
+        tabBtnTable: document.getElementById('tabBtnTable'),
+        panelBoard: document.getElementById('panelBoard'),
+        panelTable: document.getElementById('panelTable'),
+        attemptsBoard: document.getElementById('attemptsBoard'),
+
+        miniSlotsStrip: document.getElementById('miniSlotsStrip'),
+        miniLastAttempt: document.getElementById('miniLastAttempt'),
+        inspZ: document.getElementById('inspZ'),
+        inspSym: document.getElementById('inspSym'),
+        inspName: document.getElementById('inspName'),
+        inspCat: document.getElementById('inspCat'),
+        inspEN: document.getElementById('inspEN'),
+        inspVal: document.getElementById('inspVal'),
+        btnPutInSlot: document.getElementById('btnPutInSlot'),
+
+        filterAll: document.getElementById('filterAll'),
+        filterNonMetals: document.getElementById('filterNonMetals'),
+        filterHideAbsent: document.getElementById('filterHideAbsent'),
+        btnToggleFit: document.getElementById('btnToggleFit'),
+        ptScrollHint: document.getElementById('ptScrollHint'),
+        periodicTable: document.getElementById('periodicTable'),
+
+        hintsModal: document.getElementById('hintsModal'),
+        hintsModalList: document.getElementById('hintsModalList'),
+        btnRevealNextHint: document.getElementById('btnRevealNextHint'),
+        btnCloseHints: document.getElementById('btnCloseHints'),
+
+        resultModal: document.getElementById('resultModal'),
+        resultTitle: document.getElementById('resultTitle'),
+        resultSubtitle: document.getElementById('resultSubtitle'),
+        resultTypeBadge: document.getElementById('resultTypeBadge'),
+        resultFormula: document.getElementById('resultFormula'),
+        resultEquation: document.getElementById('resultEquation'),
+        resultElements: document.getElementById('resultElements'),
+        btnCloseResult: document.getElementById('btnCloseResult'),
+        btnCopyResult: document.getElementById('btnCopyResult'),
+        btnNewGameModal: document.getElementById('btnNewGameModal'),
+
+        rulesModal: document.getElementById('rulesModal'),
+        btnCloseRules: document.getElementById('btnCloseRules'),
+        btnAcceptRules: document.getElementById('btnAcceptRules'),
+
+        toast: document.getElementById('toast'),
+
+        slots: [0, 1, 2].map(i => ({
+          box: document.getElementById('slotBox' + i),
+          input: document.getElementById('slotInput' + i),
+          clearBtn: document.getElementById('slotClear' + i),
+          sub: document.getElementById('slotSub' + i),
+          en: document.getElementById('slotEN' + i),
+          vals: document.getElementById('slotVals' + i),
+          warn: document.getElementById('slotWarn' + i)
+        }))
+      };
+
+      let toastTimer = null;
+      function showToast(msg) {
+        dom.toast.textContent = msg;
+        dom.toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => dom.toast.classList.remove('show'), 2600);
+      }
+
+      /* ==========================================================================
+         4. PESTAÑAS MÓVILES Y TABLA PERIÓDICA INTERACTIVA
+         ========================================================================== */
+      function setMobileTab(tabName) {
+        gameState.activeMobileTab = tabName;
+        const isBoard = tabName === 'board';
+        dom.tabBtnBoard.classList.toggle('active', isBoard);
+        dom.tabBtnBoard.setAttribute('aria-selected', String(isBoard));
+        dom.tabBtnTable.classList.toggle('active', !isBoard);
+        dom.tabBtnTable.setAttribute('aria-selected', String(!isBoard));
+        dom.panelBoard.classList.toggle('mobile-hidden', !isBoard);
+        dom.panelTable.classList.toggle('mobile-hidden', isBoard);
+      }
+
+      const ptCellsMap = new Map();
+      const NONMETAL_METALLOID_CATS = new Set(['no-metal', 'halogeno', 'metaloide']);
+
+      function buildPeriodicTable() {
+        dom.periodicTable.innerHTML = '';
+        ptCellsMap.clear();
+
+        const lanMarker = document.createElement('div');
+        lanMarker.className = 'pt-marker';
+        lanMarker.style.gridRow = '6';
+        lanMarker.style.gridColumn = '3';
+        lanMarker.textContent = '57-71';
+        dom.periodicTable.appendChild(lanMarker);
+
+        const actMarker = document.createElement('div');
+        actMarker.className = 'pt-marker';
+        actMarker.style.gridRow = '7';
+        actMarker.style.gridColumn = '3';
+        actMarker.textContent = '89-103';
+        dom.periodicTable.appendChild(actMarker);
+
+        const lanLabel = document.createElement('div');
+        lanLabel.className = 'fblock-label';
+        lanLabel.style.gridRow = '9';
+        lanLabel.textContent = 'Lantánidos';
+        dom.periodicTable.appendChild(lanLabel);
+
+        const actLabel = document.createElement('div');
+        actLabel.className = 'fblock-label';
+        actLabel.style.gridRow = '10';
+        actLabel.textContent = 'Actínidos';
+        dom.periodicTable.appendChild(actLabel);
+
+        for (const el of ELEMENTS) {
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'pt-cell';
+          cell.dataset.z = String(el.z);
+          cell.dataset.cat = el.cat;
+
+          const gridRow = el.row >= 8 ? el.row + 1 : el.row;
+          cell.style.gridRow = String(gridRow);
+          cell.style.gridColumn = String(el.col);
+          cell.setAttribute('aria-label', el.name + ' (' + el.sym + '), Z=' + el.z);
+
+          const homoDot = el.homonuclear ? '<span class="pt-homo-dot"></span>' : '';
+          cell.innerHTML = '<span class="pt-z">' + el.z + '</span>' + homoDot + '<span class="pt-sym">' + el.sym + '</span>';
+
+          cell.addEventListener('mouseenter', () => {
+            if (window.matchMedia('(hover: hover)').matches) {
+              updateInspector(el);
+            }
+          });
+
+          cell.addEventListener('click', () => {
+            const isDesktopPointer = window.matchMedia('(min-width: 900px) and (hover: hover)').matches;
+            const alreadyInspected = gameState.inspectedEl && gameState.inspectedEl.z === el.z;
+            updateInspector(el);
+
+            if (gameState.gameOver) return;
+            if (isDesktopPointer || alreadyInspected) {
+              assignElementToSlot(gameState.activeSlot, el, true);
+              showToast(el.sym + ' colocado en Posición ' + (gameState.activeSlot === 0 ? 3 : gameState.activeSlot));
+            }
+          });
+
+          dom.periodicTable.appendChild(cell);
+          ptCellsMap.set(el.z, cell);
+        }
+      }
+
+      function updateInspector(el) {
+        if (!el) return;
+        gameState.inspectedEl = el;
+
+        for (const [z, cell] of ptCellsMap.entries()) {
+          cell.classList.toggle('inspected', z === el.z);
+        }
+
+        dom.inspZ.textContent = String(el.z);
+        dom.inspSym.textContent = el.sym;
+        dom.inspName.innerHTML = el.name + (el.homonuclear ? '<span class="homo-tag">' + el.sym + '₃ (0)</span>' : '');
+
+        const status = gameState.elementStatuses.get(el.z) || 'unused';
+        const statusText = {
+          unused: 'Sin probar',
+          absent: 'Descartado',
+          present: 'Otra posición',
+          correct: 'Posición exacta'
+        }[status];
+
+        dom.inspCat.textContent = el.catLabel + ' · ' + statusText;
+        dom.inspEN.textContent = el.en !== null ? el.en.toFixed(2) : 'N/A';
+        dom.inspVal.textContent = el.allValences.map(formatSigned).join(', ');
+        updatePutInSlotButton();
+      }
+
+      function updatePutInSlotButton() {
+        dom.btnPutInSlot.textContent = 'Poner en Pos. ' + (gameState.activeSlot + 1);
+        dom.btnPutInSlot.disabled = gameState.gameOver || !gameState.inspectedEl;
+      }
+
+      function applyPeriodicTableFilters() {
+        for (const el of ELEMENTS) {
+          const cell = ptCellsMap.get(el.z);
+          if (!cell) continue;
+          const st = gameState.elementStatuses.get(el.z) || 'unused';
+          let hidden = false;
+          if (gameState.ptCategoryFilter === 'nonmetals' && !NONMETAL_METALLOID_CATS.has(el.cat)) {
+            hidden = true;
+          }
+          if (gameState.ptHideAbsent && st === 'absent') {
+            hidden = true;
+          }
+          cell.classList.toggle('filtered-out', hidden);
+        }
+      }
+
+      function refreshPeriodicTableStates() {
+        for (const [z, cell] of ptCellsMap.entries()) {
+          cell.classList.remove('state-correct', 'state-present', 'state-absent');
+          const st = gameState.elementStatuses.get(z);
+          if (st && st !== 'unused') {
+            cell.classList.add('state-' + st);
+          }
+        }
+        applyPeriodicTableFilters();
+        if (gameState.inspectedEl) {
+          updateInspector(gameState.inspectedEl);
+        }
+      }
+
+      function renderMiniSummary() {
+        dom.miniSlotsStrip.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+          const el = gameState.selected[i];
+          const pill = document.createElement('button');
+          pill.type = 'button';
+          pill.className = 'mini-slot-pill' + (gameState.activeSlot === i ? ' active' : '');
+          pill.textContent = 'P' + (i + 1) + ': ' + (el ? el.sym : '—');
+          pill.addEventListener('click', () => setActiveSlot(i));
+          dom.miniSlotsStrip.appendChild(pill);
+        }
+
+        if (gameState.attempts.length === 0) {
+          dom.miniLastAttempt.textContent = 'Sin intentos';
+        } else {
+          const last = gameState.attempts[gameState.attempts.length - 1];
+          dom.miniLastAttempt.innerHTML =
+            '<span>Último:</span>' +
+            last.molecule.elements.map((el, i) =>
+              '<span class="mini-chip ' + last.statuses[i] + '">' + el.sym + '</span>'
+            ).join('');
+        }
+      }
+
+      /* ==========================================================================
+         5. TABLERO DE 8 INTENTOS
+         ========================================================================== */
+      function renderBoard(animateRowIndex = -1) {
+        dom.attemptsBoard.innerHTML = '';
+
+        for (let r = 0; r < MAX_ATTEMPTS; r++) {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'board-row';
+          if (r === gameState.attempts.length && !gameState.gameOver) {
+            rowDiv.classList.add('current');
+          }
+
+          const idxDiv = document.createElement('div');
+          idxDiv.className = 'row-index';
+          idxDiv.textContent = String(r + 1);
+          rowDiv.appendChild(idxDiv);
+
+          const attempt = gameState.attempts[r];
+          for (let c = 0; c < 3; c++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if (attempt) {
+              const el = attempt.molecule.elements[c];
+              tile.classList.add(attempt.statuses[c]);
+              if (r === animateRowIndex) {
+                tile.classList.add('reveal');
+                tile.style.animationDelay = (c * 95) + 'ms';
+              }
+              tile.innerHTML = '<span class="tile-sym">' + el.sym + '</span><span class="tile-name">' + el.name + '</span>';
+            } else {
+              tile.innerHTML = '<span class="tile-sym" style="opacity:0.18;">—</span>';
+            }
+            rowDiv.appendChild(tile);
+          }
+
+          const metaDiv = document.createElement('div');
+          metaDiv.className = 'row-chem-meta';
+          if (attempt) {
+            metaDiv.innerHTML =
+              '<div class="row-formula">' + attempt.molecule.formulaHTML + '</div>' +
+              '<div class="row-valences">(' + attempt.molecule.valences.map(formatSigned).join(', ') + ')</div>';
+          } else {
+            metaDiv.innerHTML = '<span style="opacity:0.2; font-size:0.75rem;">—</span>';
+          }
+          rowDiv.appendChild(metaDiv);
+
+          dom.attemptsBoard.appendChild(rowDiv);
+        }
+
+        const currentDisplay = Math.min(gameState.attempts.length + 1, MAX_ATTEMPTS);
+        dom.attemptCounter.textContent = gameState.gameOver
+          ? (gameState.won ? '✓ ' + gameState.attempts.length + '/' + MAX_ATTEMPTS : '✗ ' + MAX_ATTEMPTS + '/' + MAX_ATTEMPTS)
+          : currentDisplay + ' / ' + MAX_ATTEMPTS;
+
+        renderMiniSummary();
+      }
+
+      /* ==========================================================================
+         6. PERMUTACIONES ("⇄ Reordenar"), CHIPS DE VALENCIAS Y VALIDADOR EN VIVO
+         ========================================================================== */
+      function getValidPermutations(triple) {
+        if (!triple || !triple[0] || !triple[1] || !triple[2]) return [];
+        const orders = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+        const seen = new Set();
+        const validPerms = [];
+
+        for (const [a, b, c] of orders) {
+          const perm = [triple[a], triple[b], triple[c]];
+          const key = perm[0].z + '-' + perm[1].z + '-' + perm[2].z;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const ev = evaluateMoleculeSolutions(perm[0], perm[1], perm[2]);
+          if (ev.valid && ev.molecule) {
+            validPerms.push({ key, elements: perm, score: ev.molecule.score });
+          }
+        }
+        validPerms.sort((x, y) => x.score - y.score);
+        return validPerms;
+      }
+
+      function updateReorderButton() {
+        const [e1, e2, e3] = gameState.selected;
+        const btn = dom.btnReorder;
+        const hint = dom.reorderHint;
+
+        btn.classList.remove('needs-fix');
+        hint.classList.remove('show');
+        hint.textContent = '';
+
+        if (gameState.gameOver || !e1 || !e2 || !e3) {
+          btn.disabled = true;
+          return;
+        }
+
+        const currentKey = e1.z + '-' + e2.z + '-' + e3.z;
+        const validPerms = getValidPermutations(gameState.selected);
+        const otherValid = validPerms.filter(p => p.key !== currentKey);
+
+        if (validPerms.length === 0 || otherValid.length === 0) {
+          btn.disabled = true;
+          return;
+        }
+
+        btn.disabled = false;
+        const currentIsValid = Boolean(gameState.currentEval && gameState.currentEval.valid);
+        if (!currentIsValid) {
+          btn.classList.add('needs-fix');
+          hint.textContent = '✦ Existe un orden válido: toca "⇄ Reordenar" para ajustarlo.';
+          hint.classList.add('show');
+        } else {
+          hint.textContent = '✦ Hay otra permutación válida disponible con "⇄ Reordenar".';
+          hint.classList.add('show');
+        }
+      }
+
+      function reorderSelectedElements() {
+        if (gameState.gameOver) return;
+        const [e1, e2, e3] = gameState.selected;
+        if (!e1 || !e2 || !e3) return;
+
+        const currentKey = e1.z + '-' + e2.z + '-' + e3.z;
+        const validPerms = getValidPermutations(gameState.selected);
+        if (validPerms.length === 0) return;
+
+        const curIdx = validPerms.findIndex(p => p.key === currentKey);
+        const nextPerm = curIdx === -1 ? validPerms[0] : validPerms[(curIdx + 1) % validPerms.length];
+        if (!nextPerm || nextPerm.key === currentKey) return;
+
+        gameState.selected = [nextPerm.elements[0], nextPerm.elements[1], nextPerm.elements[2]];
+        gameState.selectedSolutionIdx = 0;
+
+        for (let i = 0; i < 3; i++) {
+          const el = gameState.selected[i];
+          const slot = dom.slots[i];
+          slot.input.value = el.sym;
+          slot.sub.textContent = el.name;
+          slot.en.textContent = el.en !== null ? el.en.toFixed(2) : '—';
+          slot.box.classList.add('filled');
+        }
+
+        closeAutocomplete();
+        renderValencesAndValidator();
+        renderMiniSummary();
+      }
+
+      function isValenceCompatibleWithRole(val, slotIdx) {
+        if (val === 0) return true;
+        if (slotIdx === 0) return val > 0;
+        if (slotIdx === 2) return val < 0;
+        return true;
+      }
+
+      function selectAlternativeValence(slotIdx, targetVal) {
+        const ev = gameState.currentEval;
+        if (!ev || !ev.valid || !ev.solutions || ev.solutions.length <= 1) return;
+
+        const currentSol = ev.solutions[gameState.selectedSolutionIdx] || ev.solutions[0];
+        let bestIdx = -1;
+        let bestOverlap = -1;
+
+        ev.solutions.forEach((sol, idx) => {
+          if (sol.valences[slotIdx] !== targetVal) return;
+          let overlap = 0;
+          for (let j = 0; j < 3; j++) {
+            if (j !== slotIdx && sol.valences[j] === currentSol.valences[j]) overlap++;
+          }
+          if (overlap > bestOverlap) {
+            bestOverlap = overlap;
+            bestIdx = idx;
+          }
+        });
+
+        if (bestIdx !== -1) {
+          gameState.selectedSolutionIdx = bestIdx;
+          renderValencesAndValidator();
+        }
+      }
+
+      function renderValencesAndValidator() {
+        const [e1, e2, e3] = gameState.selected;
+        const allFilled = Boolean(e1 && e2 && e3);
+
+        if (allFilled) {
+          gameState.currentEval = evaluateMoleculeSolutions(e1, e2, e3);
+          if (!gameState.currentEval.valid || gameState.selectedSolutionIdx >= gameState.currentEval.solutions.length) {
+            gameState.selectedSolutionIdx = 0;
+          }
+        } else {
+          gameState.currentEval = null;
+          gameState.selectedSolutionIdx = 0;
+        }
+
+        const ev = gameState.currentEval;
+        const activeSol = ev && ev.valid ? ev.solutions[gameState.selectedSolutionIdx] : null;
+        const partialRoleErrors = [];
+
+        for (let i = 0; i < 3; i++) {
+          const slot = dom.slots[i];
+          const el = gameState.selected[i];
+
+          slot.box.classList.remove('matched-slot', 'conflict-slot');
+          slot.warn.classList.remove('show');
+          slot.warn.textContent = '';
+
+          if (!el) {
+            slot.vals.innerHTML = '<span class="val-placeholder">' + DEFAULT_VAL_PLACEHOLDERS[i] + '</span>';
+            continue;
+          }
+
+          const roleCheck = checkSingleSlotRole(el, i, gameState.selected);
+          const isConflict = (!allFilled && !roleCheck.ok) || (allFilled && !ev.valid && ev.conflictSlots.includes(i));
+
+          if (isConflict) {
+            slot.box.classList.add('conflict-slot');
+            if (!roleCheck.ok) {
+              slot.warn.textContent = roleCheck.msg;
+              slot.warn.classList.add('show');
+              partialRoleErrors.push({ slotIdx: i, el, msg: roleCheck.msg });
+            }
+          } else if (activeSol) {
+            slot.box.classList.add('matched-slot');
+          }
+
+          const validValsForSlot = new Set();
+          if (ev && ev.valid) {
+            ev.solutions.forEach(s => validValsForSlot.add(s.valences[i]));
+          }
+
+          slot.vals.innerHTML = '';
+          el.allValences.forEach(v => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'val-chip';
+
+            if (activeSol) {
+              if (activeSol.valences[i] === v) {
+                chip.classList.add('matched');
+                chip.textContent = formatSigned(v) + ' ✓';
+              } else if (validValsForSlot.has(v)) {
+                chip.classList.add('alt-valid');
+                chip.textContent = formatSigned(v);
+                chip.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  selectAlternativeValence(i, v);
+                });
+              } else {
+                chip.classList.add('incompatible');
+                chip.textContent = formatSigned(v);
+              }
+            } else {
+              const compat = isValenceCompatibleWithRole(v, i);
+              chip.classList.add(compat ? 'compatible' : 'incompatible');
+              chip.textContent = formatSigned(v);
+            }
+
+            slot.vals.appendChild(chip);
+          });
+        }
+
+        dom.liveValidator.classList.remove('valid', 'warn', 'invalid');
+
+        if (!allFilled) {
+          dom.btnSubmit.disabled = true;
+          if (partialRoleErrors.length > 0) {
+            dom.liveValidator.classList.add('warn');
+            const details = partialRoleErrors.map(err => '<strong>' + err.el.sym + '</strong> en P' + (err.slotIdx + 1) + ': ' + err.msg).join(' · ');
+            dom.liveValidator.innerHTML = '⚠ ' + details + '. El 0 solo balancea en triatómicas E₃.';
+          } else {
+            dom.liveValidator.textContent = 'Completa las 3 posiciones escribiendo o tocando elementos en la Tabla Periódica.';
+          }
+          updateReorderButton();
+          return;
+        }
+
+        if (ev.valid && activeSol) {
+          dom.liveValidator.classList.add('valid');
+          dom.btnSubmit.disabled = gameState.gameOver;
+
+          const altNote = ev.solutions.length > 1
+            ? '<div class="validator-alt-note">✦ ' + ev.solutions.length + ' combinaciones válidas: toca un chip con borde verde discontinuo para alternar.</div>'
+            : '';
+
+          dom.liveValidator.innerHTML =
+            '<div class="validator-formula">' +
+              '<span>✔ ' + activeSol.formulaHTML + '</span>' +
+              '<span class="validator-pill">' + activeSol.typeLabel + '</span>' +
+            '</div>' +
+            '<div class="validator-meta">Valencias: <strong>(' + activeSol.valences.map(formatSigned).join(', ') + ')</strong> · ' + activeSol.equation + '</div>' +
+            altNote;
+        } else {
+          dom.liveValidator.classList.add('invalid');
+          dom.btnSubmit.disabled = true;
+          dom.liveValidator.innerHTML =
+            '<div style="font-weight:800;">✖ Molécula no válida</div>' +
+            '<div class="validator-meta">' + ev.reason + '</div>';
+        }
+
+        updateReorderButton();
+      }
+
+      /* ==========================================================================
+         7. CASILLAS Y AUTOCOMPLETADO TÁCTIL
+         ========================================================================== */
+      function setActiveSlot(index) {
+        gameState.activeSlot = index;
+        dom.slots.forEach((s, i) => s.box.classList.toggle('active', i === index));
+        updatePutInSlotButton();
+        renderMiniSummary();
+      }
+
+      function closeAutocomplete() {
+        dom.acPanel.classList.remove('open');
+        gameState.acSlotIdx = -1;
+        gameState.acMatches = [];
+        gameState.acHighlight = -1;
+      }
+
+      function assignElementToSlot(index, el, autoAdvance) {
+        gameState.selected[index] = el;
+        gameState.selectedSolutionIdx = 0;
+
+        const slot = dom.slots[index];
+        if (el) {
+          slot.input.value = el.sym;
+          slot.sub.textContent = el.name;
+          slot.en.textContent = el.en !== null ? el.en.toFixed(2) : '—';
+          slot.box.classList.add('filled');
+        } else {
+          slot.input.value = '';
+          slot.sub.textContent = DEFAULT_SUBS[index];
+          slot.en.textContent = '';
+          slot.box.classList.remove('filled');
+        }
+
+        closeAutocomplete();
+        renderValencesAndValidator();
+
+        if (autoAdvance && el) {
+          const nextEmpty = gameState.selected.findIndex((item, idx) => idx > index && item === null);
+          if (nextEmpty !== -1) setActiveSlot(nextEmpty);
+          else {
+            const anyEmpty = gameState.selected.findIndex(item => item === null);
+            if (anyEmpty !== -1) setActiveSlot(anyEmpty);
+            else setActiveSlot((index + 1) % 3);
+          }
+        } else {
+          renderMiniSummary();
+        }
+      }
+
+      function searchElements(query) {
+        const q = normalizeText(query);
+        if (!q) return [];
+        const exactSym = [];
+        const prefixSym = [];
+        const prefixName = [];
+        const containsName = [];
+
+        for (const el of ELEMENTS) {
+          if (el.symNorm === q) exactSym.push(el);
+          else if (el.symNorm.startsWith(q)) prefixSym.push(el);
+          else if (el.nameNorm.startsWith(q)) prefixName.push(el);
+          else if (el.nameNorm.includes(q)) containsName.push(el);
+        }
+        return [...exactSym, ...prefixSym, ...prefixName, ...containsName].slice(0, 7);
+      }
+
+      function renderAutocomplete(slotIdx, query) {
+        const matches = searchElements(query);
+        gameState.acSlotIdx = slotIdx;
+        gameState.acMatches = matches;
+        gameState.acHighlight = matches.length > 0 ? 0 : -1;
+
+        if (matches.length === 0) {
+          closeAutocomplete();
+          return;
+        }
+
+        dom.acPanel.innerHTML = '';
+        matches.forEach((el, idx) => {
+          const item = document.createElement('div');
+          item.className = 'autocomplete-item' + (idx === 0 ? ' highlighted' : '');
+          item.setAttribute('role', 'option');
+          item.innerHTML =
+            '<span class="ac-sym">' + el.sym + '</span>' +
+            '<span class="ac-name">' + el.name + '</span>' +
+            '<span class="ac-meta">Z=' + el.z + (el.en !== null ? ' · EN ' + el.en.toFixed(2) : '') + '</span>';
+
+          item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            assignElementToSlot(slotIdx, el, true);
+            updateInspector(el);
+          });
+          dom.acPanel.appendChild(item);
+        });
+
+        dom.acPanel.classList.add('open');
+      }
+
+      function updateAutocompleteHighlight() {
+        const items = dom.acPanel.querySelectorAll('.autocomplete-item');
+        items.forEach((item, idx) => {
+          item.classList.toggle('highlighted', idx === gameState.acHighlight);
+          if (idx === gameState.acHighlight) item.scrollIntoView({ block: 'nearest' });
+        });
+      }
+
+      function resolveTypedInput(slotIdx) {
+        const q = normalizeText(dom.slots[slotIdx].input.value);
+        if (!q) {
+          assignElementToSlot(slotIdx, null, false);
+          return null;
+        }
+        const exact = ELEMENTS.find(e => e.symNorm === q || e.nameNorm === q);
+        if (exact) {
+          assignElementToSlot(slotIdx, exact, false);
+          updateInspector(exact);
+          return exact;
+        }
+        return gameState.selected[slotIdx];
+      }
+
+      /* ==========================================================================
+         8. ENVÍO DE INTENTOS, PISTAS DINÁMICAS (3) Y RESULTADO FINAL
+         ========================================================================== */
+      function submitGuess() {
+        if (gameState.gameOver) return;
+
+        for (let i = 0; i < 3; i++) {
+          if (!gameState.selected[i] && dom.slots[i].input.value.trim()) {
+            resolveTypedInput(i);
+          }
+        }
+
+        const [e1, e2, e3] = gameState.selected;
+        if (!e1 || !e2 || !e3) {
+          showToast('Completa las 3 posiciones antes de probar.');
+          return;
+        }
+
+        const ev = gameState.currentEval || evaluateMoleculeSolutions(e1, e2, e3);
+        if (!ev.valid) {
+          showToast(ev.reason);
+          return;
+        }
+
+        const guessMol = ev.solutions[gameState.selectedSolutionIdx] || ev.molecule;
+        const statuses = evaluateWordleTwoPass(guessMol.elements, gameState.target.elements);
+        const rowIndex = gameState.attempts.length;
+
+        gameState.attempts.push({ molecule: guessMol, statuses });
+
+        // Jerarquía Verde > Amarillo > Rojo en la tabla periódica
+        guessMol.elements.forEach((el, idx) => {
+          const prev = gameState.elementStatuses.get(el.z) || 'unused';
+          const next = statuses[idx];
+          if (STATE_PRIORITY[next] > STATE_PRIORITY[prev]) {
+            gameState.elementStatuses.set(el.z, next);
+          }
+        });
+
+        refreshPeriodicTableStates();
+
+        if (statuses.every(s => s === 'correct')) {
+          gameState.gameOver = true;
+          gameState.won = true;
+        } else if (gameState.attempts.length >= MAX_ATTEMPTS) {
+          gameState.gameOver = true;
+          gameState.won = false;
+        }
+
+        // En móvil, cambiar automáticamente a la pestaña Tablero para ver el flip
+        setMobileTab('board');
+        renderBoard(rowIndex);
+
+        if (gameState.gameOver) {
+          dom.btnSubmit.disabled = true;
+          dom.btnReorder.disabled = true;
+          updateHintControls();
+          updatePutInSlotButton();
+          setTimeout(openResultModal, 580);
+        } else {
+          clearCurrentInputs();
+        }
+      }
+
+      function clearCurrentInputs() {
+        for (let i = 0; i < 3; i++) {
+          assignElementToSlot(i, null, false);
+        }
+        setActiveSlot(0);
+      }
+
+      /** Preselecciona 2 pistas distintas del pool de 5 opciones usando el PRNG de la partida */
+      function buildDynamicHints(target, rng) {
+        const [e1, e2, e3] = target.elements;
+        const pool = ['sumZ', 'nameInitial', 'enRange', 'anionValence', 'cationValence'];
+        const chosenTypes = [];
+
+        for (let k = 0; k < 2; k++) {
+          const idx = Math.floor(rng() * pool.length);
+          chosenTypes.push(pool.splice(idx, 1)[0]);
+        }
+
+        const roleLabels = ['Posición 1 · Catión', 'Posición 2 · Central', 'Posición 3 · Anión'];
+
+        return chosenTypes.map(type => {
+          if (type === 'sumZ') {
+            return {
+              label: 'Suma de números atómicos',
+              body: 'La suma de los números atómicos (ΣZ) de los 3 átomos es <strong>' + (e1.z + e2.z + e3.z) + '</strong>.'
+            };
+          }
+          if (type === 'nameInitial') {
+            if (target.type === 'homonuclear') {
+              return {
+                label: 'Inicial del nombre',
+                body: 'El nombre en español del elemento homonuclear comienza con la letra <strong>"' + e1.name.charAt(0).toUpperCase() + '"</strong>.'
+              };
+            }
+            const posIdx = Math.floor(rng() * 3);
+            const chosenEl = target.elements[posIdx];
+            return {
+              label: 'Inicial del nombre',
+              body: 'El nombre en español del átomo en <strong>' + roleLabels[posIdx] + '</strong> comienza con la letra <strong>"' + chosenEl.name.charAt(0).toUpperCase() + '"</strong>.'
+            };
+          }
+          if (type === 'enRange') {
+            return {
+              label: 'Rango de electronegatividad',
+              body: 'El rango de electronegatividad de Pauling va de <strong>' + e1.en.toFixed(2) + '</strong> a <strong>' + e3.en.toFixed(2) + '</strong>.'
+            };
+          }
+          if (type === 'anionValence') {
+            return {
+              label: 'Valencia del anión',
+              body: 'El estado de oxidación activo del anión (Posición 3) es <strong>' + formatSigned(target.valences[2]) + '</strong>.'
+            };
+          }
+          return {
+            label: 'Valencia del catión',
+            body: 'El estado de oxidación activo del catión (Posición 1) es <strong>' + formatSigned(target.valences[0]) + '</strong>.'
+          };
+        });
+      }
+
+      function updateHintControls() {
+        dom.hintBtnCount.textContent = gameState.hintsUsed + '/' + gameState.maxHints;
+        const canReveal = !gameState.gameOver && gameState.hintsUsed < gameState.maxHints;
+        dom.btnRevealNextHint.disabled = !canReveal;
+        dom.btnRevealNextHint.textContent = gameState.hintsUsed >= gameState.maxHints
+          ? 'Todas las pistas reveladas (3/3)'
+          : 'Revelar Pista ' + (gameState.hintsUsed + 1) + ' / ' + gameState.maxHints;
+
+        if (gameState.revealedHintsHTML.length === 0) {
+          dom.hintsModalList.innerHTML = '<div class="hint-empty">Aún no has revelado pistas. Toca el botón de abajo para desbloquear la Pista 1.</div>';
+        } else {
+          dom.hintsModalList.innerHTML = gameState.revealedHintsHTML
+            .map(html => '<div class="hint-card">' + html + '</div>')
+            .join('');
+        }
+      }
+
+      function revealNextHint() {
+        if (gameState.gameOver || gameState.hintsUsed >= gameState.maxHints) return;
+        const t = gameState.target;
+        const [e1, e2, e3] = t.elements;
+        let text = '';
+
+        if (gameState.hintsUsed === 0) {
+          const cats = t.type === 'homonuclear'
+            ? 'Los 3 átomos son un <em>' + e1.catLabel + '</em> idéntico (valencia 0).'
+            : 'Categorías: Catión <em>' + e1.catLabel + '</em> · Central <em>' + e2.catLabel + '</em> · Anión <em>' + e3.catLabel + '</em>.';
+          text = '<strong>Pista 1 (Tipo y categorías):</strong> Es una molécula <strong>' + t.typeLabel + '</strong>. ' + cats;
+        } else {
+          const dyn = gameState.hintQueue[gameState.hintsUsed - 1];
+          text = '<strong>Pista ' + (gameState.hintsUsed + 1) + ' (' + dyn.label + '):</strong> ' + dyn.body;
+        }
+
+        gameState.hintsUsed++;
+        gameState.revealedHintsHTML.push(text);
+        updateHintControls();
+      }
+
+      function openResultModal() {
+        const t = gameState.target;
+        const modeTag = gameState.mode === 'daily'
+          ? 'Modo Diario (' + gameState.dailyDateDisplay + ')'
+          : 'Modo Libre';
+
+        if (gameState.won) {
+          dom.resultTitle.textContent = '¡Molécula descubierta!';
+          dom.resultTitle.style.color = '#86efac';
+          dom.resultSubtitle.textContent = modeTag + ' · Acertaste en ' + gameState.attempts.length + (gameState.attempts.length === 1 ? ' intento.' : ' intentos.');
+        } else {
+          dom.resultTitle.textContent = 'Se agotaron los 8 intentos';
+          dom.resultTitle.style.color = '#fca5a5';
+          dom.resultSubtitle.textContent = modeTag + ' · La molécula objetivo era:';
+        }
+
+        dom.resultTypeBadge.textContent = t.typeLabel;
+        dom.resultFormula.innerHTML = t.formulaHTML;
+        dom.resultEquation.textContent = 'Carga neutra: ' + t.equation;
+        dom.btnNewGameModal.textContent = gameState.mode === 'daily' ? 'Jugar en Modo Libre' : 'Jugar otra partida';
+
+        const roles = ['Pos 1 · +', 'Pos 2 · ±', 'Pos 3 · −'];
+        dom.resultElements.innerHTML = t.elements.map((el, i) =>
+          '<div class="result-el-card">' +
+            '<div class="r-pos">' + roles[i] + '</div>' +
+            '<div class="r-sym">' + el.sym + '</div>' +
+            '<div class="r-name">' + el.name + '</div>' +
+            '<div class="r-meta">Val: <strong>' + formatSigned(t.valences[i]) + '</strong> · ×' + t.subscripts[i] + '<br>EN ' + el.en.toFixed(2) + '</div>' +
+          '</div>'
+        ).join('');
+
+        dom.resultModal.classList.add('open');
+      }
+
+      function buildShareSummary() {
+        const score = gameState.won ? gameState.attempts.length + '/' + MAX_ATTEMPTS : 'X/' + MAX_ATTEMPTS;
+        const header = gameState.mode === 'daily'
+          ? 'ChemWordle Diario ' + gameState.dailyDateDisplay + ' — ' + score
+          : 'ChemWordle Libre — ' + score;
+
+        const emojiMap = { correct: '🟩', present: '🟨', absent: '🟥' };
+        const grid = gameState.attempts
+          .map(a => a.statuses.map(s => emojiMap[s] || '⬛').join(''))
+          .join('\n');
+
+        const hintsLine = gameState.hintsUsed > 0 ? '\nPistas usadas: ' + gameState.hintsUsed + '/3' : '';
+        return header + '\n' + grid + hintsLine;
+      }
+
+      function copyResultToClipboard() {
+        const text = buildShareSummary();
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast(ok ? '¡Resultado copiado al portapapeles!' : 'No se pudo copiar.');
+        } catch (err) {
+          showToast('No se pudo copiar el resultado.');
+        }
+      }
+
+      function updateModeUI() {
+        const isDaily = gameState.mode === 'daily';
+        dom.btnModeDaily.classList.toggle('active', isDaily);
+        dom.btnModeFree.classList.toggle('active', !isDaily);
+        dom.btnNewGameHeader.title = isDaily ? 'Reiniciar Molécula del Día' : 'Nueva partida libre';
+      }
+
+      function setGameMode(mode) {
+        if (gameState.mode === mode && gameState.target) return;
+        gameState.mode = mode;
+        updateModeUI();
+        startNewGame();
+      }
+
+      function startNewGame() {
+        const dateInfo = getLocalDateInfo();
+        gameState.dailyDateISO = dateInfo.iso;
+        gameState.dailyDateDisplay = dateInfo.display;
+        dom.dailyDateLabel.textContent = dateInfo.display;
+        updateModeUI();
+
+        const activeRng = gameState.mode === 'daily'
+          ? mulberry32(hashStringToSeed('ChemWordle-Daily-' + dateInfo.iso))
+          : Math.random;
+
+        gameState.target = generateTargetMolecule(activeRng, gameState.mode === 'daily');
+        gameState.hintQueue = buildDynamicHints(gameState.target, activeRng);
+
+        gameState.attempts = [];
+        gameState.selected = [null, null, null];
+        gameState.activeSlot = 0;
+        gameState.currentEval = null;
+        gameState.selectedSolutionIdx = 0;
+        gameState.elementStatuses.clear();
+        gameState.hintsUsed = 0;
+        gameState.revealedHintsHTML = [];
+        gameState.gameOver = false;
+        gameState.won = false;
+
+        dom.btnSubmit.disabled = true;
+        dom.resultModal.classList.remove('open');
+        dom.hintsModal.classList.remove('open');
+        updateHintControls();
+        updatePutInSlotButton();
+
+        clearCurrentInputs();
+        refreshPeriodicTableStates();
+        renderBoard();
+        showToast(
+          gameState.mode === 'daily'
+            ? 'Molécula del Día (' + dateInfo.display + ') lista.'
+            : 'Nueva molécula aleatoria lista.'
+        );
+      }
+
+      /* ==========================================================================
+         9. EVENTOS E INICIALIZACIÓN SEGURA
+         ========================================================================== */
+      function bindEvents() {
+        dom.slots.forEach((slot, idx) => {
+          slot.box.addEventListener('click', (e) => {
+            if (e.target.closest('.val-chip') || e.target.closest('.slot-clear-btn')) return;
+            setActiveSlot(idx);
+            slot.input.focus();
+          });
+
+          slot.clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameState.gameOver) return;
+            assignElementToSlot(idx, null, false);
+            setActiveSlot(idx);
+          });
+
+          slot.input.addEventListener('focus', () => {
+            setActiveSlot(idx);
+            if (slot.input.value.trim()) {
+              renderAutocomplete(idx, slot.input.value);
+            }
+          });
+
+          slot.input.addEventListener('input', () => {
+            gameState.selected[idx] = null;
+            gameState.selectedSolutionIdx = 0;
+            slot.box.classList.remove('filled');
+            slot.sub.textContent = DEFAULT_SUBS[idx];
+            slot.en.textContent = '';
+            renderAutocomplete(idx, slot.input.value);
+            renderValencesAndValidator();
+            renderMiniSummary();
+          });
+
+          slot.input.addEventListener('keydown', (e) => {
+            const isOpen = dom.acPanel.classList.contains('open') && gameState.acSlotIdx === idx;
+            if (e.key === 'ArrowDown' && isOpen) {
+              e.preventDefault();
+              gameState.acHighlight = (gameState.acHighlight + 1) % gameState.acMatches.length;
+              updateAutocompleteHighlight();
+            } else if (e.key === 'ArrowUp' && isOpen) {
+              e.preventDefault();
+              gameState.acHighlight = (gameState.acHighlight - 1 + gameState.acMatches.length) % gameState.acMatches.length;
+              updateAutocompleteHighlight();
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (isOpen && gameState.acHighlight >= 0 && gameState.acMatches[gameState.acHighlight]) {
+                const chosen = gameState.acMatches[gameState.acHighlight];
+                assignElementToSlot(idx, chosen, true);
+                updateInspector(chosen);
+              } else {
+                resolveTypedInput(idx);
+                if (gameState.selected.every(Boolean)) {
+                  submitGuess();
+                } else {
+                  const nextEmpty = gameState.selected.findIndex(x => x === null);
+                  if (nextEmpty !== -1) {
+                    setActiveSlot(nextEmpty);
+                    dom.slots[nextEmpty].input.focus();
+                  }
+                }
+              }
+            } else if (e.key === 'Escape') {
+              closeAutocomplete();
+            }
+          });
+
+          slot.input.addEventListener('blur', () => {
+            setTimeout(() => {
+              if (gameState.acSlotIdx === idx) closeAutocomplete();
+              if (!gameState.selected[idx] && slot.input.value.trim()) {
+                resolveTypedInput(idx);
+              }
+            }, 140);
+          });
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#slotsAnchor')) {
+            closeAutocomplete();
+          }
+        });
+
+        dom.btnReorder.addEventListener('click', reorderSelectedElements);
+        dom.btnSubmit.addEventListener('click', submitGuess);
+
+        dom.tabBtnBoard.addEventListener('click', () => setMobileTab('board'));
+        dom.tabBtnTable.addEventListener('click', () => setMobileTab('table'));
+
+        dom.btnPutInSlot.addEventListener('click', () => {
+          if (gameState.gameOver || !gameState.inspectedEl) return;
+          const placedPos = gameState.activeSlot + 1;
+          const sym = gameState.inspectedEl.sym;
+          assignElementToSlot(gameState.activeSlot, gameState.inspectedEl, true);
+          showToast(sym + ' colocado en Posición ' + placedPos);
+        });
+
+        /* Filtros rápidos de tabla periódica */
+        dom.filterAll.addEventListener('click', () => {
+          gameState.ptCategoryFilter = 'all';
+          dom.filterAll.classList.add('active');
+          dom.filterNonMetals.classList.remove('active');
+          applyPeriodicTableFilters();
+        });
+
+        dom.filterNonMetals.addEventListener('click', () => {
+          gameState.ptCategoryFilter = 'nonmetals';
+          dom.filterNonMetals.classList.add('active');
+          dom.filterAll.classList.remove('active');
+          applyPeriodicTableFilters();
+        });
+
+        dom.filterHideAbsent.addEventListener('click', () => {
+          gameState.ptHideAbsent = !gameState.ptHideAbsent;
+          dom.filterHideAbsent.classList.toggle('active', gameState.ptHideAbsent);
+          applyPeriodicTableFilters();
+        });
+
+        dom.btnToggleFit.addEventListener('click', () => {
+          gameState.ptFitMode = !gameState.ptFitMode;
+          dom.periodicTable.classList.toggle('fit-mode', gameState.ptFitMode);
+          dom.btnToggleFit.textContent = gameState.ptFitMode ? '🔍 Ajustada' : '↔️ Deslizar';
+          dom.ptScrollHint.style.display = gameState.ptFitMode ? 'none' : '';
+        });
+
+        /* Modos y reinicio */
+        dom.btnModeDaily.addEventListener('click', () => setGameMode('daily'));
+        dom.btnModeFree.addEventListener('click', () => setGameMode('free'));
+        dom.btnNewGameHeader.addEventListener('click', startNewGame);
+
+        /* Modal Pistas */
+        dom.btnHint.addEventListener('click', () => {
+          updateHintControls();
+          dom.hintsModal.classList.add('open');
+        });
+        dom.btnRevealNextHint.addEventListener('click', revealNextHint);
+        dom.btnCloseHints.addEventListener('click', () => dom.hintsModal.classList.remove('open'));
+        dom.hintsModal.addEventListener('click', (e) => {
+          if (e.target === dom.hintsModal) dom.hintsModal.classList.remove('open');
+        });
+
+        /* Modal Resultado */
+        dom.btnCopyResult.addEventListener('click', copyResultToClipboard);
+        dom.btnNewGameModal.addEventListener('click', () => {
+          if (gameState.mode === 'daily') setGameMode('free');
+          else startNewGame();
+        });
+        dom.btnCloseResult.addEventListener('click', () => dom.resultModal.classList.remove('open'));
+        dom.resultModal.addEventListener('click', (e) => {
+          if (e.target === dom.resultModal) dom.resultModal.classList.remove('open');
+        });
+
+        /* Modal Reglas */
+        dom.btnRules.addEventListener('click', () => dom.rulesModal.classList.add('open'));
+        dom.btnCloseRules.addEventListener('click', () => dom.rulesModal.classList.remove('open'));
+        dom.btnAcceptRules.addEventListener('click', () => dom.rulesModal.classList.remove('open'));
+        dom.rulesModal.addEventListener('click', (e) => {
+          if (e.target === dom.rulesModal) dom.rulesModal.classList.remove('open');
+        });
+      }
+
+      function initApp() {
+        try {
+          buildPeriodicTable();
+          bindEvents();
+          startNewGame();
+          updateInspector(ELEMENT_BY_Z.get(8)); // Oxígeno preseleccionado en el inspector
+        } catch (err) {
+          console.error('Error al inicializar ChemWordle:', err);
+          if (dom.liveValidator) {
+            dom.liveValidator.classList.add('invalid');
+            dom.liveValidator.textContent = 'Ocurrió un error al iniciar el juego. Recarga la página.';
+          }
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        initApp();
+      }
+    })();
+  </script>
+</body>
+</html>
