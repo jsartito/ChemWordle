@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0d061a" />
-  <title>ChemWordle: Ternario y Triatómico</title>
+  <title>ChemWordle — Triatómico</title>
   <style>
     /* ==========================================================================
        VARIABLES Y ESTÉTICA MOBILE-FIRST (MORADO MUY OSCURO + GLASSMORPHISM)
@@ -1436,6 +1436,33 @@
       text-align: center;
     }
 
+    .hint-locked {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(14, 6, 28, 0.62);
+      border: 1px dashed rgba(167, 139, 250, 0.28);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .hint-locked.unlocked-ready {
+      border-color: rgba(234, 179, 8, 0.45);
+      color: #fde68a;
+      background: rgba(202, 138, 4, 0.08);
+    }
+
+    .btn-reveal-single {
+      min-height: 34px;
+      padding: 5px 11px;
+      font-size: 0.76rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     /* Resultado final */
     .formula-showcase {
       text-align: center;
@@ -1651,7 +1678,7 @@
           </div>
           <div class="brand-text">
             <h1>ChemWordle</h1>
-            <p>Ternario y Triatómico</p>
+            <p>Triatómico</p>
           </div>
         </div>
         <div class="attempt-badge" id="attemptCounter">1 / 8</div>
@@ -1870,9 +1897,6 @@
         <button class="modal-close" id="btnCloseHints" type="button" aria-label="Cerrar">&times;</button>
       </div>
       <div class="hints-modal-list" id="hintsModalList"></div>
-      <button class="btn btn-hint" id="btnRevealNextHint" type="button" style="min-height: 46px; font-size: 0.9rem;">
-        Revelar Pista 1 / 3
-      </button>
     </div>
   </div>
 
@@ -2568,6 +2592,7 @@
          3. ESTADO GLOBAL Y REFERENCIAS DOM
          ========================================================================== */
       const MAX_ATTEMPTS = 8;
+      const HINT_UNLOCK_ATTEMPTS = [0, 2, 7];
       const STATE_PRIORITY = { unused: 0, absent: 1, present: 2, correct: 3 };
       const DEFAULT_SUBS = ['Menor EN', 'EN media', 'Mayor EN'];
       const DEFAULT_VAL_PLACEHOLDERS = ['Val. (+ y 0)', 'Val. (± y 0)', 'Val. (− y 0)'];
@@ -2586,7 +2611,7 @@
         hintsUsed: 0,
         maxHints: 3,
         hintQueue: [],
-        revealedHintsHTML: [],
+        revealedHints: [false, false, false],
         gameOver: false,
         won: false,
         activeMobileTab: 'board',
@@ -2641,7 +2666,6 @@
 
         hintsModal: document.getElementById('hintsModal'),
         hintsModalList: document.getElementById('hintsModalList'),
-        btnRevealNextHint: document.getElementById('btnRevealNextHint'),
         btnCloseHints: document.getElementById('btnCloseHints'),
 
         resultModal: document.getElementById('resultModal'),
@@ -3326,15 +3350,20 @@
         // En móvil, cambiar automáticamente a la pestaña Tablero para ver el flip
         setMobileTab('board');
         renderBoard(rowIndex);
+        updateHintControls();
 
         if (gameState.gameOver) {
           dom.btnSubmit.disabled = true;
           dom.btnReorder.disabled = true;
-          updateHintControls();
           updatePutInSlotButton();
           setTimeout(openResultModal, 580);
         } else {
           clearCurrentInputs();
+          if (gameState.attempts.length === HINT_UNLOCK_ATTEMPTS[1]) {
+            showToast('💡 ¡Pista 2 desbloqueada!');
+          } else if (gameState.attempts.length === HINT_UNLOCK_ATTEMPTS[2]) {
+            showToast('💡 ¡Pista 3 desbloqueada!');
+          }
         }
       }
 
@@ -3398,42 +3427,71 @@
         });
       }
 
-      function updateHintControls() {
-        dom.hintBtnCount.textContent = gameState.hintsUsed + '/' + gameState.maxHints;
-        const canReveal = !gameState.gameOver && gameState.hintsUsed < gameState.maxHints;
-        dom.btnRevealNextHint.disabled = !canReveal;
-        dom.btnRevealNextHint.textContent = gameState.hintsUsed >= gameState.maxHints
-          ? 'Todas las pistas reveladas (3/3)'
-          : 'Revelar Pista ' + (gameState.hintsUsed + 1) + ' / ' + gameState.maxHints;
-
-        if (gameState.revealedHintsHTML.length === 0) {
-          dom.hintsModalList.innerHTML = '<div class="hint-empty">Aún no has revelado pistas. Toca el botón de abajo para desbloquear la Pista 1.</div>';
-        } else {
-          dom.hintsModalList.innerHTML = gameState.revealedHintsHTML
-            .map(html => '<div class="hint-card">' + html + '</div>')
-            .join('');
-        }
-      }
-
-      function revealNextHint() {
-        if (gameState.gameOver || gameState.hintsUsed >= gameState.maxHints) return;
+      function getHintHTML(idx) {
         const t = gameState.target;
         const [e1, e2, e3] = t.elements;
-        let text = '';
-
-        if (gameState.hintsUsed === 0) {
+        if (idx === 0) {
           const cats = t.type === 'homonuclear'
             ? 'Los 3 átomos son un <em>' + e1.catLabel + '</em> idéntico (valencia 0).'
             : 'Categorías: Catión <em>' + e1.catLabel + '</em> · Central <em>' + e2.catLabel + '</em> · Anión <em>' + e3.catLabel + '</em>.';
-          text = '<strong>Pista 1 (Tipo y categorías):</strong> Es una molécula <strong>' + t.typeLabel + '</strong>. ' + cats;
-        } else {
-          const dyn = gameState.hintQueue[gameState.hintsUsed - 1];
-          text = '<strong>Pista ' + (gameState.hintsUsed + 1) + ' (' + dyn.label + '):</strong> ' + dyn.body;
+          return '<strong>Pista 1 (Tipo y categorías):</strong> Es una molécula <strong>' + t.typeLabel + '</strong>. ' + cats;
+        }
+        const dyn = gameState.hintQueue[idx - 1];
+        return '<strong>Pista ' + (idx + 1) + ' (' + dyn.label + '):</strong> ' + dyn.body;
+      }
+
+      function revealHint(idx) {
+        if (gameState.gameOver || idx < 0 || idx >= gameState.maxHints) return;
+        if (gameState.revealedHints[idx]) return;
+
+        const requiredAttempts = HINT_UNLOCK_ATTEMPTS[idx];
+        if (gameState.attempts.length < requiredAttempts) {
+          showToast('🔒 Se desbloquea tras el ' + (requiredAttempts === 2 ? '2.º' : '7.º') + ' intento.');
+          return;
         }
 
-        gameState.hintsUsed++;
-        gameState.revealedHintsHTML.push(text);
+        gameState.revealedHints[idx] = true;
+        gameState.hintsUsed = gameState.revealedHints.filter(Boolean).length;
         updateHintControls();
+      }
+
+      function updateHintControls() {
+        gameState.hintsUsed = gameState.revealedHints.filter(Boolean).length;
+        dom.hintBtnCount.textContent = gameState.hintsUsed + '/' + gameState.maxHints;
+
+        dom.hintsModalList.innerHTML = '';
+        const unlockLabels = ['', 'Se desbloquea tras el 2.º intento', 'Se desbloquea tras el 7.º intento'];
+
+        for (let i = 0; i < gameState.maxHints; i++) {
+          if (gameState.revealedHints[i]) {
+            const card = document.createElement('div');
+            card.className = 'hint-card';
+            card.innerHTML = getHintHTML(i);
+            dom.hintsModalList.appendChild(card);
+          } else {
+            const req = HINT_UNLOCK_ATTEMPTS[i];
+            const unlocked = gameState.attempts.length >= req;
+            const card = document.createElement('div');
+            card.className = 'hint-locked' + (unlocked ? ' unlocked-ready' : '');
+
+            if (unlocked && !gameState.gameOver) {
+              const info = document.createElement('span');
+              info.innerHTML = '🔓 <strong>Pista ' + (i + 1) + '</strong> disponible';
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'btn btn-hint btn-reveal-single';
+              btn.textContent = 'Revelar Pista ' + (i + 1);
+              btn.addEventListener('click', () => revealHint(i));
+              card.appendChild(info);
+              card.appendChild(btn);
+            } else {
+              card.innerHTML =
+                '<span>🔒 <strong>Pista ' + (i + 1) + '</strong> bloqueada</span>' +
+                '<span>' + (gameState.gameOver ? 'Partida finalizada' : unlockLabels[i]) + '</span>';
+            }
+            dom.hintsModalList.appendChild(card);
+          }
+        }
       }
 
       function openResultModal() {
@@ -3539,7 +3597,7 @@
         gameState.selectedSolutionIdx = 0;
         gameState.elementStatuses.clear();
         gameState.hintsUsed = 0;
-        gameState.revealedHintsHTML = [];
+        gameState.revealedHints = [false, false, false];
         gameState.gameOver = false;
         gameState.won = false;
 
@@ -3696,7 +3754,6 @@
           updateHintControls();
           dom.hintsModal.classList.add('open');
         });
-        dom.btnRevealNextHint.addEventListener('click', revealNextHint);
         dom.btnCloseHints.addEventListener('click', () => dom.hintsModal.classList.remove('open'));
         dom.hintsModal.addEventListener('click', (e) => {
           if (e.target === dom.hintsModal) dom.hintsModal.classList.remove('open');
